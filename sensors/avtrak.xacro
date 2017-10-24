@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:macro name="avtrak" params="name parent_link xyz rpy">
+  <!-- First, define the link -->
+  <link name="${name}">
+    <visual>
+      <origin xyz="0 0 -0.25515" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.0931" length="0.5103"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
+  </link>
+
+  <!-- Now apply the offsets -->
+  <joint name="base_to_${name}" type="fixed">
+    <parent link="${parent_link}"/>
+    <child link="${name}"/>
+    <origin xyz="${xyz}" rpy="${rpy}"/>
+  </joint>
+
+  <!-- TODO: Gazebo plugin to actually take measurements! -->
+
+</xacro:macro>
+
+
+</robot>
+

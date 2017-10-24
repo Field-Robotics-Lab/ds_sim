@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<!-- Coordinate transform from CAD to ROS
+       This moves x to y, y to z, and z to x.  We'll perform 
+       some of those coordinate swaps as-needed inline below -->
+<xacro:property name="cad_to_body_r" value="${pi/2}"/>
+<xacro:property name="cad_to_body_p" value="0"/>
+<xacro:property name="cad_to_body_y" value="${pi/2}"/>
+
+<!-- Create a block that uses a mesh for geometry and a tight
+     bounding box for collision detection -->
+<xacro:macro name="mesh_with_bb_collision" params="mesh_file scale max_x min_x max_y min_y max_z min_z off_x off_y off_z reflect *material">
+<visual>
+      <origin xyz = "${off_x} ${off_y} ${off_z}" rpy="${cad_to_body_r*reflect} ${cad_to_body_p} ${cad_to_body_y*reflect}"/>
+      <geometry>
+        <mesh filename="${mesh_file}" scale="${scale} ${scale} ${scale}"/>
+      </geometry>
+      <xacro:insert_block name="material"/>
+    </visual>
+
+    <collision>
+      <origin xyz="${(max_z + min_z)*scale*0.5 + off_x} ${reflect*((max_x + min_x)*scale*0.5 + off_y)} ${(max_y + min_y)*scale*0.5 + off_z}" rpy="${cad_to_body_r*reflect} ${cad_to_body_p} ${cad_to_body_y*reflect}"/>
+      <geometry>
+        <box size="${(max_x - min_x)*scale} ${(max_y - min_y)*scale} ${(max_z - min_z)*scale}"/> 
+      </geometry>
+    </collision>
+
+</xacro:macro>
+
+
+
+</robot>

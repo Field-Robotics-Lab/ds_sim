@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<!-- Some common constants to do unit conversions -->
+<xacro:property name="in_to_m" value="0.0254"/>
+<xacro:property name="ft_to_m" value="0.3048"/>
+
+<xacro:property name="lb_to_kg" value="0.453592"/>
+
+
+<!-- Common includes -->
+<xacro:include filename="$(find dsl_sim)/urdf/materials.xacro"/>
+<xacro:include filename="$(find dsl_sim)/urdf/sensors.xacro"/>
+
+
+</robot>
