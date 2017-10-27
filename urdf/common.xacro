@@ -9,8 +9,8 @@
 
 
 <!-- Common includes -->
-<xacro:include filename="$(find dsl_sim)/urdf/materials.xacro"/>
-<xacro:include filename="$(find dsl_sim)/urdf/sensors.xacro"/>
+<xacro:include filename="$(find ds_sim)/urdf/materials.xacro"/>
+<xacro:include filename="$(find ds_sim)/urdf/sensors.xacro"/>
 
 
 </robot>

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>dsl_sim</name>
+  <name>ds_sim</name>
   <version>0.0.0</version>
   <description>General plugins, urdf, etc for simulating vehicles with the DSL package.  Intended to focus on common sensors, actuators, etc.</description>
 
@@ -9,7 +9,7 @@
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
   <license>TODO</license>
 
-  <url type="repository">https://bitbucket.org/whoidsl/dsl_sim</url> -->
+  <url type="repository">https://bitbucket.org/whoidsl/ds_sim</url> -->
 
   <author email="ssuman@whoi.edu">Stefano Suman</author>
   <author email="zberkowitz@whoi.edu">Zac Berkowitzh</author>
@@ -18,14 +18,17 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>gazebo</build_depend>
+  <build_depend>gazebo_ros</build_depend>
   <build_depend>xacro</build_depend>
-  <build_depend>dsl_msgs</build_depend>
+  <build_depend>ds_msgs</build_depend>
   <build_export_depend>gazebo</build_export_depend>
+  <build_export_depend>gazebo_ros</build_export_depend>
   <build_export_depend>xacro</build_export_depend>
-  <build_export_depend>dsl_msgs</build_export_depend>
+  <build_export_depend>ds_msgs</build_export_depend>
   <exec_depend>gazebo</exec_depend>
+  <exec_depend>gazebo_ros</exec_depend>
   <exec_depend>xacro</exec_depend>
-  <exec_depend>dsl_msgs</exec_depend>
+  <exec_depend>ds_msgs</exec_depend>
   <exec_depend>ros-kinetic-joystick-drivers</exec_depend>
 
 

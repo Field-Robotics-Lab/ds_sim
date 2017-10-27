@@ -1,16 +1,16 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(dsl_sim)
+project(ds_sim)
 
 add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
-  dsl_msgs
+  ds_msgs
 )
 
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES dsl_sim
-  CATKIN_DEPENDS gazebo xacro dsl_msgs
+#  LIBRARIES ds_sim
+  CATKIN_DEPENDS gazebo xacro ds_msgs
 #  DEPENDS system_lib
 )
 

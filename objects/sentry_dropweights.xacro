@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<robot name="dropweight" xmlns:xacro="http://www.ros.org/wiki/xacro" >
+
+<xacro:arg name="namespace" default="dropweight"/>
+<xacro:arg name="debug" default="0"/>
+<xacro:property name="plate_x" value="0.3048"/>
+<xacro:property name="plate_y" value="0.2286"/>
+<xacro:property name="plate_z" value="0.015875"/>
+<xacro:property name="plate_num" value="4"/>
+<xacro:property name="plate_density" value="7745.9476"/>
+<xacro:property name="water_rho" value="1027.3"/>
+
+<xacro:property name="stack_x" value="${plate_x}"/>
+<xacro:property name="stack_y" value="${plate_y}"/>
+<xacro:property name="stack_z" value="${plate_z*plate_num}"/>
+<xacro:property name="stack_v" value="${stack_x*stack_y*stack_z}"/>
+<xacro:property name="stack_m" value="${stack_v*plate_density}"/>
+
+<!-- Drag coefficients (mostly made up) -->
+<xacro:property name="cd_lin" value="1.0"/>
+<xacro:property name="cd_rot" value="100.0"/>
+
+<link name="$(arg namespace)/base_link">
+  <inertial>
+    <mass value="${stack_m}"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <inertia ixx="${stack_m*(stack_y*stack_y+stack_z*stack_z)/12}" ixy="0" ixz="0"
+             iyy="${stack_m*(stack_x*stack_x+stack_z*stack_z)/12}" iyz="0" 
+             izz="${stack_m*(stack_x*stack_x+stack_y*stack_y)/12}" />
+  </inertial>
+
+  <visual>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <box size="${stack_x} ${stack_y} ${stack_z}"/>
+    </geometry>
+  </visual>
+
+
+  <collision>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <geometry>
+      <box size="${stack_x} ${stack_y} ${stack_z}"/>
+    </geometry>
+  </collision>
+
+  <gazebo>
+    <plugin name="$(arg namespace)_uuv_plugin" filename="libunderwater_object_ros_plugin.so">
+    <fluid_density>${water_rho}</fluid_density>
+    <debug>$(arg debug)</debug>
+    <link name="$(arg namespace)/base_link}">
+      <neutrally_buoyant>0</neutrally_buoyant>
+
+      <volume>${stack_v}</volume>
+
+      <box>
+        <width>${stack_x}</width>
+        <length>${stack_y}</length>
+        <height>${stack_z}</height>
+      </box>
+
+      <center_of_buoyancy>0 0 0</center_of_buoyancy>
+
+      <hydrodynamic_model>
+        <type>fossen</type>
+        <added_mass>
+        ${stack_m} 0 0 0 0 0
+        0 ${stack_m} 0 0 0 0 
+        0 0 ${stack_m} 0 0 0 
+        0 0 0 ${stack_m} 0 0 
+        0 0 0 0 ${stack_m} 0 
+        0 0 0 0 0 ${stack_m} 
+        </added_mass>
+
+        <linear_damping>
+          ${0.5*water_rho*cd_lin*stack_y*stack_z}
+          ${0.5*water_rho*cd_lin*stack_x*stack_z}
+          ${0.5*water_rho*cd_lin*stack_x*stack_y}
+          ${0.5*water_rho*cd_lin*stack_x*stack_y}
+          ${0.5*water_rho*cd_rot*stack_y*stack_x}
+          ${0.5*water_rho*cd_rot*stack_z*stack_x}
+        </linear_damping>
+        <quadratic_damping>
+          ${0.5*water_rho*cd_lin*stack_y*stack_z}
+          ${0.5*water_rho*cd_lin*stack_x*stack_z}
+          ${0.5*water_rho*cd_lin*stack_x*stack_y}
+          ${0.5*water_rho*cd_lin*stack_x*stack_y}
+          ${0.5*water_rho*cd_rot*stack_y*stack_x}
+          ${0.5*water_rho*cd_rot*stack_z*stack_x}
+        </quadratic_damping>
+      </hydrodynamic_model>
+    </link>
+    </plugin>
+  </gazebo>
+</link>
+
+
+</robot>
