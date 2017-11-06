@@ -20,14 +20,14 @@ target_link_libraries(dsros_jointstate_publisher ${catkin_LIBRARIES} ${GAZEBO_LI
 add_dependencies(dsros_jointstate_publisher ds_msgs_generate_messages_cpp)
 
 # dsros_servo
-add_library(dsros_servo src/dsros_servo.cc)
-target_link_libraries(dsros_servo ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_servo ds_msgs_generate_messages_cpp)
+#add_library(dsros_servo src/dsros_servo.cc)
+#target_link_libraries(dsros_servo ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+#add_dependencies(dsros_servo ds_msgs_generate_messages_cpp)
 
 # dsros_thruster
-add_library(dsros_thruster src/dsros_thruster.cc)
-target_link_libraries(dsros_thruster ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_thruster ds_msgs_generate_messages_cpp)
+#add_library(dsros_thruster src/dsros_thruster.cc)
+#target_link_libraries(dsros_thruster ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+#add_dependencies(dsros_thruster ds_msgs_generate_messages_cpp)
 
 # dsros_dropweights
 #add_library(dsros_dropweights src/dsros_dropweights.cc)

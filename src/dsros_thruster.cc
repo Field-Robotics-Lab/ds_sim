@@ -15,6 +15,7 @@
 #include <ros/subscribe_options.h>
 #include <ds_msgs/ThrusterCmd.h>
 #include <ds_msgs/ThrusterState.h>
+#include <ds_sim/ds_thruster.h>
 #include <thread>
 
 #include <boost/bind.hpp>
