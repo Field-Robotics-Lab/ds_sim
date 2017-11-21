@@ -54,6 +54,13 @@ class DsJointStatePublisher : public ModelPlugin {
         ROS_INFO_STREAM("ds_jointstatepublisher: Initializing internal ROS node...");
         rosNode.reset(new ros::NodeHandle(robotNamespace));
 
+        sign = 1.0;
+        if (_sdf->HasElement("invertSign")) {
+            if (_sdf->Get<bool>("invertSign")) {
+                sign = -1.0;
+            }
+        }
+
         // prepare some reference times
         double updateRate = 10;
         if (_sdf->HasElement("updateRate")) {
@@ -94,7 +101,7 @@ class DsJointStatePublisher : public ModelPlugin {
                 jointState.velocity[i] = 0;
                 jointState.effort[i] = 0;
             } else {
-                jointState.position[i] = joint->GetAngle(0).Radian();
+                jointState.position[i] = sign*joint->GetAngle(0).Radian();
                 jointState.velocity[i] = joint->GetVelocity(0);
                 jointState.effort[i] = joint->GetForce(0);
             }
@@ -108,6 +115,7 @@ class DsJointStatePublisher : public ModelPlugin {
     event::ConnectionPtr updateConnection;
     std::string robotNamespace;
     physics::ModelPtr model;
+    double sign;
 
     gazebo::common::Time rosPublishPeriod, lastRosPublished;
 

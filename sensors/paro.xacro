@@ -3,7 +3,7 @@
 
 <xacro:macro name="paro_digiquartz" params="name parent_link xyz rpy">
   <!-- First, define the link -->
-  <link name="${name}">
+  <link name="${name}_link">
     <visual>
       <origin xyz="0 0 0.1217" rpy="0 0 0"/>
       <geometry>
@@ -12,15 +12,37 @@
       <material name="grey"/>
     </visual>
   </link>
+    <gazebo reference="${parent_link}">
+      <sensor name="${name}_sensor" type="dsros_depth">
+        <always_on>1</always_on>
+        <update_rate>5.000</update_rate>
+        <pose frame="">${xyz} ${rpy}</pose>
+        <dsros_depth>
+        </dsros_depth>
+      </sensor>
+    </gazebo>
+
+
 
   <!-- Now apply the offsets -->
   <joint name="base_to_${name}" type="fixed">
     <parent link="${parent_link}"/>
-    <child link="${name}"/>
+    <child link="${name}_link"/>
     <origin xyz="${xyz}" rpy="${rpy}"/>
   </joint>
 
-  <!-- TODO: Gazebo plugin to actually take measurements! -->
+  <!-- Gazebo plugin to actually take measurements! -->
+  <gazebo>
+    <!--
+    <plugin name="depthsensor_${name}" filename="libdsros_depthsensor.so">
+      <robotNamespace>$(arg namespace)</robotNamespace>
+      <root_topic>sensors/${name}</root_topic>
+      <linkname>${name}</linkname>
+      <updateRate>5</updateRate>
+      
+    </plugin>
+    -->
+  </gazebo>
 
 </xacro:macro>
 
