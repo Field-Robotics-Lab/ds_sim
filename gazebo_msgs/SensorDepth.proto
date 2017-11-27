@@ -1,0 +1,11 @@
+package ds_sim.msgs;
+
+import "time.proto";
+
+message PressureDepth
+{
+    required gazebo.msgs.Time stamp = 1;
+    required double depth           = 2;
+    required double pressure_dbar   = 3;
+    required double latitude_deg    = 4;
+}

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-<xacro:macro name="paro_digiquartz" params="name parent_link xyz rpy">
+<xacro:macro name="paro_digiquartz" params="name parent_link xyz rpy robot_namespace topic">
   <!-- First, define the link -->
   <link name="${name}_link">
     <visual>
@@ -12,17 +12,24 @@
       <material name="grey"/>
     </visual>
   </link>
-    <gazebo reference="${parent_link}">
-      <sensor name="${name}_sensor" type="dsros_depth">
-        <always_on>1</always_on>
-        <update_rate>5.000</update_rate>
-        <pose frame="">${xyz} ${rpy}</pose>
-        <dsros_depth>
-        </dsros_depth>
-      </sensor>
-    </gazebo>
-
-
+  <gazebo reference="${name}_link">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+  <gazebo reference="${parent_link}">
+    <sensor name="${name}_sensor" type="dsros_depth">
+      <always_on>1</always_on>
+      <update_rate>5.000</update_rate>
+      <pose frame="">${xyz} ${rpy}</pose>
+      <plugin name="${name}_sensor_controller" filename="libdsros_ros_depth.so">
+          <robotNamespace>${robot_namespace}</robotNamespace>
+          <topicName>${topic}</topicName>
+          <frameName>world</frameName>
+          <updateRateHZ>5</updateRateHZ>
+          <!-- Actually in decibars, but pretty close to meters -->
+          <gaussianNoise>0.005</gaussianNoise>
+      </plugin>
+    </sensor>
+  </gazebo>
 
   <!-- Now apply the offsets -->
   <joint name="base_to_${name}" type="fixed">
@@ -30,20 +37,6 @@
     <child link="${name}_link"/>
     <origin xyz="${xyz}" rpy="${rpy}"/>
   </joint>
-
-  <!-- Gazebo plugin to actually take measurements! -->
-  <gazebo>
-    <!--
-    <plugin name="depthsensor_${name}" filename="libdsros_depthsensor.so">
-      <robotNamespace>$(arg namespace)</robotNamespace>
-      <root_topic>sensors/${name}</root_topic>
-      <linkname>${name}</linkname>
-      <updateRate>5</updateRate>
-      
-    </plugin>
-    -->
-  </gazebo>
-
 </xacro:macro>
 
 </robot>

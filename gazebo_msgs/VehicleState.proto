@@ -1,0 +1,10 @@
+syntax = "proto2";
+
+package ds_sim.msgs;
+
+import "time.proto";
+
+message VehicleSimState
+{
+    required bool surfaced    = 1;
+}

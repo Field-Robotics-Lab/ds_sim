@@ -26,7 +26,8 @@
 
 #include <gazebo/gazebo.hh>
 
-#include "dsros_depthsensor.cc"
+#include "dsros_depth.hh"
+#include "dsros_ins.hh"
 
 namespace gazebo {
 class RegisterDsRosSensorsPlugin : public SystemPlugin {
@@ -45,6 +46,7 @@ class RegisterDsRosSensorsPlugin : public SystemPlugin {
     public: void Load(int _argc, char** _argv) {
         gzdbg <<"Loading DS ROS Sensors! (for real!)" <<std::endl;
         RegisterDsrosDepthSensor();
+        RegisterDsrosInsSensor();
 
         std::vector<std::string> types;
         gazebo::sensors::SensorFactory::GetSensorTypes(types);

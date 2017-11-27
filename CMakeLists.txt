@@ -15,17 +15,46 @@ link_directories(${GAZEBO_LIBRARY_DIRS})
 include_directories(${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS})
 include_directories("include")
 
+# Find the protobuf directories for gazebo
+find_package(Protobuf REQUIRED)
+set(PROTOBUF_IMPORT_DIRS)
+foreach(ITR ${GAZEBO_INCLUDE_DIRS})
+  if(ITR MATCHES ".*gazebo-[0-9.]+$")
+    set(PROTOBUF_IMPORT_DIRS "${ITR}/gazebo/msgs/proto")
+  endif()
+endforeach()
+
+# Build any protobuf messages we're going to use
+set (gazebo_msgs
+  gazebo_msgs/SensorDepth.proto
+  gazebo_msgs/SensorDvl.proto
+  gazebo_msgs/SensorIns.proto
+  ${PROTOBUF_IMPORT_DIRS}/quaternion.proto
+  ${PROTOBUF_IMPORT_DIRS}/vector3d.proto
+  ${PROTOBUF_IMPORT_DIRS}/header.proto
+  ${PROTOBUF_IMPORT_DIRS}/time.proto
+)
+PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${gazebo_msgs})
+add_library(ds_sim_gazebo_msgs SHARED ${PROTO_SRCS} ${PROTO_HDRS})
+target_link_libraries(ds_sim_gazebo_msgs ${PROTOBUF_LIBRARY})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 # dsros_jointstate_publisher
 add_library(dsros_jointstate_publisher src/dsros_jointstate_publisher.cc)
 target_link_libraries(dsros_jointstate_publisher ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(dsros_jointstate_publisher ds_msgs_generate_messages_cpp)
 
+set(SENSORS_SRCS
+    gazebo_src/depth_util.cc       gazebo_src/depth_util.hpp
+    gazebo_src/dsros_depth.cc      gazebo_src/dsros_depth.hh
+    gazebo_src/dsros_ins.cc        gazebo_src/dsros_ins.hh
+    gazebo_src/dsros_sensors.cc)
+
 # dsros_sensors (passed at STARTUP as a system plugin)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
-add_library(dsros_sensors src/dsros_sensors.cc)
-target_link_libraries(dsros_sensors ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_sensors ds_msgs_generate_messages_cpp)
+add_library(dsros_sensors ${SENSORS_SRCS})
+target_link_libraries(dsros_sensors ds_sim_gazebo_msgs ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_sensors ds_sim_gazebo_msgs)
 
 # dsros_servo
 #add_library(dsros_servo src/dsros_servo.cc)
@@ -42,10 +71,15 @@ add_dependencies(dsros_sensors ds_msgs_generate_messages_cpp)
 #target_link_libraries(dsros_dropweights ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 #add_dependencies(dsros_dropweights ds_msgs_generate_messages_cpp)
 
-#di sros_depthsensor
-#add_library(dsros_depthsensor src/dsros_depthsensor.cc)
-#target_link_libraries(dsros_depthsensor ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-#add_dependencies(dsros_depthsensor ds_msgs_generate_messages_cpp)
+# dsros_ros_depth
+add_library(dsros_ros_depth src/dsros_depth_plugin.cc src/dsros_depth_plugin.hh)
+target_link_libraries(dsros_ros_depth dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_ros_depth ds_msgs_generate_messages_cpp)
+
+# dsros_ros_ins
+add_library(dsros_ros_ins src/dsros_ins_plugin.cc src/dsros_ins_plugin.hh)
+target_link_libraries(dsros_ros_ins dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_ros_ins ds_msgs_generate_messages_cpp)
 
 catkin_package(
   INCLUDE_DIRS include

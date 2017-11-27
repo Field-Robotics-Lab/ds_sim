@@ -1,0 +1,18 @@
+syntax = "proto2";
+
+package ds_sim.msgs;
+
+import "time.proto";
+import "vector3d.proto";
+import "quaternion.proto";
+
+message Dvl
+{
+    required gazebo.msgs.Time stamp               = 1;
+    required gazebo.msgs.Vector3d linear_velocity = 2;
+    repeated double ranges                        = 3;
+    repeated double range_velocities              = 4;
+    optional gazebo.msgs.Quaternion orientation   = 5;
+}
+
+
