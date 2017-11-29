@@ -14,9 +14,6 @@
 
 #include <boost/algorithm/string.hpp>
 
-
-#include "depth_util.hpp"
-
 using namespace gazebo;
 using namespace sensors;
 
@@ -40,17 +37,15 @@ void DsrosInsSensor::Load(const std::string &_worldName) {
                                                 this->ParentName());
     this->parentLink = boost::dynamic_pointer_cast<physics::Link>(parentEntity);
     if (! this->parentLink) {
-        gzdbg <<"Sensor " <<this->Name() <<" could not find parent link!" <<std::endl;
+        gzerr <<"Sensor " <<this->Name() <<" could not find parent link!" <<std::endl;
         if (parentEntity) {
-            gzdbg <<"parent: " <<parentEntity->GetName() <<std::endl;
+            gzerr <<"parent: " <<parentEntity->GetName() <<std::endl;
         }
     }
 
     // setup to publish!
     this->topicName = this->GetTopic();
     this->insPub = this->node->Advertise<ds_sim::msgs::Ins>(this->topicName, 50);
-
-    // TODO: Add noise!
 }
 
 void DsrosInsSensor::Init() {
@@ -84,11 +79,29 @@ bool DsrosInsSensor::UpdateImpl(const bool _force) {
     }
 
     // Get the actual sensor values
-    ignition::math::Pose3d insPose = this->pose + this->parentLink->GetWorldPose().Ign();
+
+   
+    ignition::math::Pose3d parentLinkPose = this->parentLink->GetWorldPose().Ign();
+    ignition::math::Pose3d insPose = this->pose + parentLinkPose;
+
+    // angular velocity
     ignition::math::Vector3<double> angular_velocity
          = insPose.Rot().Inverse().RotateVector(this->parentLink->GetWorldAngularVel().Ign());
 
-    math::Vector3 linear_velocity = this->parentLink->GetWorldLinearVel(this->pose.Pos(), this->pose.Rot());
+    // linear velocity
+    ignition::math::Vector3d linear_velocity = this->parentLink->
+                                    GetWorldLinearVel(this->pose.Pos(), this->pose.Rot()).Ign();
+
+    // linear acceleration
+    ignition::math::Vector3d gravity = this->world->GetPhysicsEngine()->GetGravity().Ign();
+    ignition::math::Vector3d linear_accel = this->parentLink->GetWorldLinearAccel().Ign();
+    ignition::math::Vector3d angular_accel = this->parentLink->GetWorldAngularAccel().Ign();
+    // lever-arm offset
+    linear_accel += angular_accel.Cross(this->pose.Pos());
+    // TODO: There should probably be a centripital acceleration term or something?
+
+    // apply gravity
+    linear_accel -= insPose.Rot().Inverse().RotateVector(gravity);
 
     // Get the latitude
     double lat;
@@ -104,7 +117,8 @@ bool DsrosInsSensor::UpdateImpl(const bool _force) {
     this->msg.set_heading_deg(insPose.Rot().Yaw());
     msgs::Set(this->msg.mutable_orientation(), insPose.Rot());
     msgs::Set(this->msg.mutable_angular_velocity(), angular_velocity);
-    msgs::Set(this->msg.mutable_linear_velocity(),  linear_velocity.Ign());
+    msgs::Set(this->msg.mutable_linear_velocity(),  linear_velocity);
+    msgs::Set(this->msg.mutable_linear_accel(),  linear_accel);
     this->msg.set_latitude_deg(lat);
 
     // Actually publish
@@ -113,6 +127,56 @@ bool DsrosInsSensor::UpdateImpl(const bool _force) {
     }
 
     return true;
+}
+
+common::Time DsrosInsSensor::GetTime() const {
+    std::lock_guard<std::mutex>(this->mutex);
+    return msgs::Convert(this->msg.stamp());
+}
+
+std::string DsrosInsSensor::GetEntityName() const {
+    std::lock_guard<std::mutex>(this->mutex);
+    return this->msg.entity_name();
+}
+    
+ignition::math::Quaterniond DsrosInsSensor::GetOrientation() const {
+    std::lock_guard<std::mutex>(this->mutex);
+    return msgs::ConvertIgn(this->msg.orientation());
+}
+
+ignition::math::Vector3d DsrosInsSensor::GetAngularVelocity() const {
+    std::lock_guard<std::mutex>(this->mutex);
+    return msgs::ConvertIgn(this->msg.angular_velocity());
+}
+
+ignition::math::Vector3d DsrosInsSensor::GetLinearVelocity() const {
+    std::lock_guard<std::mutex>(this->mutex);
+    return msgs::ConvertIgn(this->msg.linear_velocity());
+}
+
+ignition::math::Vector3d DsrosInsSensor::GetLinearAcceleration() const {
+    std::lock_guard<std::mutex>(this->mutex);
+    return msgs::ConvertIgn(this->msg.linear_accel());
+}
+
+double DsrosInsSensor::GetLatitude() const {
+    std::lock_guard<std::mutex>(this->mutex);
+    return this->msg.latitude_deg();
+}
+
+double DsrosInsSensor::GetRoll() const {
+    std::lock_guard<std::mutex>(this->mutex);
+    return this->msg.roll_deg();
+}
+
+double DsrosInsSensor::GetPitch() const {
+    std::lock_guard<std::mutex>(this->mutex);
+    return this->msg.pitch_deg();
+}
+
+double DsrosInsSensor::GetHeading() const {
+    std::lock_guard<std::mutex>(this->mutex);
+    return this->msg.heading_deg();
 }
 
 GZ_REGISTER_STATIC_SENSOR("dsros_ins", DsrosInsSensor);

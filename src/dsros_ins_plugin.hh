@@ -11,24 +11,26 @@
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/common/UpdateInfo.hh>
 #include <ignition/math/Vector3.hh>
+#include <ignition/math/Quaternion.hh>
 #include <ignition/math/Pose3.hh>
 #include <ros/ros.h>
-#include <ds_msgs/DepthData.h>
+#include <ds_msgs/InsData.h>
 #include <string>
+#include <geometry_msgs/QuaternionStamped.h>
 
-#include "../gazebo_src/dsros_depth.hh"
+#include "../gazebo_src/dsros_ins.hh"
 
 namespace gazebo {
 
-class dsrosRosDepthSensor : public SensorPlugin
+class dsrosRosInsSensor : public SensorPlugin
 {
 public:
 
   /// \brief Constructor
-  dsrosRosDepthSensor();
+  dsrosRosInsSensor();
 
   /// \brief Destructor
-  virtual ~dsrosRosDepthSensor();
+  virtual ~dsrosRosInsSensor();
 
   /// \brief Load the sensor.
   /// \param sensor_ pointer to the sensor.
@@ -42,15 +44,20 @@ protected:
 private:
 
   double GaussianKernel(double mu, double sigma);
+  double LoadNoise(const std::string& tag, double unit) const;
   bool LoadParameters();
 
   /// \brief ROS Node Handle
   ros::NodeHandle* node;
 
-  /// \brief Depth publisher
-  ros::Publisher depth_data_publisher;
+  /// \brief INS data publisher
+  ros::Publisher ins_publisher;
 
-  ds_msgs::DepthData msg;
+  /// \brief Attitude data publisher
+  ros::Publisher att_publisher;
+
+  ds_msgs::InsData ins_msg;
+  geometry_msgs::QuaternionStamped att_msg;
 
   /// \brief last time on which the data was published.
   common::Time last_time;
@@ -59,22 +66,29 @@ private:
   gazebo::event::ConnectionPtr connection;
 
   /// \brief Pointer to the sensor.
-  std::shared_ptr<sensors::DsrosDepthSensor> sensor;
+  std::shared_ptr<sensors::DsrosInsSensor> sensor;
 
   /// \brief Pointer to the sdf config file.
   sdf::ElementPtr sdf;
 
   std::string robot_namespace;
-  std::string topic_name;
+  std::string ins_topic_name;
+  std::string att_topic_name;
   std::string frame_name;
 
   unsigned int seed;
   double update_rate;
-  double gaussian_noise;
+  double noisePR, noiseY, noiseVel, noiseAngVel, noiseAcc, noiseLat;
 
   // actual core data
-  double depth;
-  double pressure;
+  common::Time data_time;
+  std::string entity_name;
+  ignition::math::Quaterniond world2ll;
+  ignition::math::Quaterniond orientation;
+  ignition::math::Vector3d angular_velocity;
+  ignition::math::Vector3d linear_velocity;
+  ignition::math::Vector3d linear_accel;
+  double pitch, roll, heading;
   double latitude;
 };
 

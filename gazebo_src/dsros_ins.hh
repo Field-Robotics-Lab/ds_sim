@@ -46,6 +46,18 @@ namespace sensors {
 
     public: virtual void Fini();
 
+    // Accessors
+    public: common::Time GetTime() const;
+    public: std::string GetEntityName() const;
+    public: ignition::math::Quaterniond GetOrientation() const;
+    public: ignition::math::Vector3d GetAngularVelocity() const;
+    public: ignition::math::Vector3d GetLinearVelocity() const;
+    public: ignition::math::Vector3d GetLinearAcceleration() const;
+    public: double GetLatitude() const;
+    public: double GetRoll() const;
+    public: double GetPitch() const;
+    public: double GetHeading() const;
+
     protected: virtual bool UpdateImpl(const bool _force);
 
     protected:

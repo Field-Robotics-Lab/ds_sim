@@ -29,6 +29,10 @@
         <updateRateHZ>10</updateRateHZ>
         <gaussianNoisePR>0.001</gaussianNoisePR>
         <gaussianNoiseY>0.01</gaussianNoiseY>
+        <gaussianNoiseVel>0.01</gaussianNoiseVel>
+        <gaussianNoiseAngVel>0.01</gaussianNoiseAngVel>
+        <gaussianNoiseAcc>0.01</gaussianNoiseAcc>
+        <gaussianNoiseLat>0.1</gaussianNoiseLat>
       </plugin>
     </sensor>
   </gazebo>
