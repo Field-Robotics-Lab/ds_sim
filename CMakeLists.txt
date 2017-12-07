@@ -15,8 +15,7 @@ find_package(cmake_modules REQUIRED)
 find_package(Eigen REQUIRED)
 link_directories(${GAZEBO_LIBRARY_DIRS})
 include_directories(${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS})
-include_directories( include
-${Eigen_INCLUDE_DIRS})
+include_directories(${Eigen_INCLUDE_DIRS})
 include_directories("include")
 
 # Find the protobuf directories for gazebo

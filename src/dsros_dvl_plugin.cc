@@ -120,6 +120,10 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         for (size_t i=0; i<sensor->NumBeams(); i++) {
             msg.range[i] = ranges[i];
             msg.range_covar[i] = gaussian_noise_vel;
+            ignition::math::Vector3d beamUnit = sensor->GetBeamUnitVec(i);
+            msg.beam_unit_vec[i].x = beamUnit.X();
+            msg.beam_unit_vec[i].y = beamUnit.Y();
+            msg.beam_unit_vec[i].z = beamUnit.Z();
         }
 
         msg.velocity_mode = ds_msgs::DvlData::DVL_COORD_INSTRUMENT;
@@ -140,7 +144,7 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         pt_msg.header.seq++;
 
         // fill in some points
-        size_t NUM_PTS_PER_BEAM = 100;
+        size_t NUM_PTS_PER_BEAM = 1000;
         double range = sensor->RangeMax() - sensor->RangeMin();
         pt_msg.points.resize(NUM_PTS_PER_BEAM*sensor->NumBeams()); // use 100 pts
         size_t fillIn = 0;
