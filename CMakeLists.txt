@@ -11,8 +11,12 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(gazebo REQUIRED)
+find_package(cmake_modules REQUIRED)
+find_package(Eigen REQUIRED)
 link_directories(${GAZEBO_LIBRARY_DIRS})
 include_directories(${Boost_INCLUDE_DIR} ${catkin_INCLUDE_DIRS} ${GAZEBO_INCLUDE_DIRS})
+include_directories( include
+${Eigen_INCLUDE_DIRS})
 include_directories("include")
 
 # Find the protobuf directories for gazebo
@@ -48,6 +52,7 @@ set(SENSORS_SRCS
     gazebo_src/depth_util.cc       gazebo_src/depth_util.hpp
     gazebo_src/dsros_depth.cc      gazebo_src/dsros_depth.hh
     gazebo_src/dsros_ins.cc        gazebo_src/dsros_ins.hh
+    gazebo_src/dsros_dvl.cc        gazebo_src/dsros_dvl.hh
     gazebo_src/dsros_sensors.cc)
 
 # dsros_sensors (passed at STARTUP as a system plugin)
@@ -80,6 +85,10 @@ add_dependencies(dsros_ros_depth ds_msgs_generate_messages_cpp)
 add_library(dsros_ros_ins src/dsros_ins_plugin.cc src/dsros_ins_plugin.hh)
 target_link_libraries(dsros_ros_ins dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(dsros_ros_ins ds_msgs_generate_messages_cpp)
+
+add_library(dsros_ros_dvl src/dsros_dvl_plugin.cc src/dsros_dvl_plugin.hh)
+target_link_libraries(dsros_ros_dvl dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_ros_dvl ds_msgs_generate_messages_cpp)
 
 catkin_package(
   INCLUDE_DIRS include

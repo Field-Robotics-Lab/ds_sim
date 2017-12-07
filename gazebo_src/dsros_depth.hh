@@ -46,6 +46,7 @@ namespace sensors {
 
     public: virtual void Fini();
 
+    public: common::Time GetTime() const;
     public: double GetDepth() const;
     public: double GetPressure() const;
     public: double GetLatitude() const;

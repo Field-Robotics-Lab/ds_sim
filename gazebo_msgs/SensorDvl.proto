@@ -12,7 +12,9 @@ message Dvl
     required gazebo.msgs.Vector3d linear_velocity = 2;
     repeated double ranges                        = 3;
     repeated double range_velocities              = 4;
-    optional gazebo.msgs.Quaternion orientation   = 5;
+    required int32 num_beams                      = 5;
+    repeated gazebo.msgs.Vector3d unit_vectors    = 6;
+    optional gazebo.msgs.Quaternion orientation   = 7;
 }
 
 

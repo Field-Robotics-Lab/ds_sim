@@ -22,11 +22,14 @@
   <build_depend>ds_msgs</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>sensor_msgs</build_depend>
+  <build_depend>protobuf-compiler</build_depend>
+  <build_depend>libeigen3-dev</build_depend>
   <build_export_depend>gazebo_ros</build_export_depend>
   <build_export_depend>xacro</build_export_depend>
   <build_export_depend>ds_msgs</build_export_depend>
   <build_export_depend>sensor_msgs</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
+  <build_export_depend>libeigen3-dev</build_export_depend>
   <exec_depend>gazebo_ros</exec_depend>
   <exec_depend>xacro</exec_depend>
   <exec_depend>ds_msgs</exec_depend>

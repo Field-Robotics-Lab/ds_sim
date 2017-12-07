@@ -77,6 +77,11 @@ std::string DsrosDepthSensor::GetTopic() const {
     return topicName;
 }
 
+common::Time DsrosDepthSensor::GetTime() const {
+    std::lock_guard<std::mutex>(this->mutex);
+    return msgs::Convert(this->msg.stamp());
+}
+
 double DsrosDepthSensor::GetDepth() const {
     std::lock_guard<std::mutex> lock(this->mutex);
     return this->msg.depth();
