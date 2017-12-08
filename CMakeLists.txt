@@ -4,7 +4,9 @@ project(ds_sim)
 add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
-  ds_msgs
+  ds_core_msgs
+  ds_actuator_msgs
+  ds_sensor_msgs
   roscpp
   sensor_msgs
   gazebo_ros
@@ -45,7 +47,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 # dsros_jointstate_publisher
 add_library(dsros_jointstate_publisher src/dsros_jointstate_publisher.cc)
 target_link_libraries(dsros_jointstate_publisher ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_jointstate_publisher ds_msgs_generate_messages_cpp)
+add_dependencies(dsros_jointstate_publisher ds_core_msgs_generate_messages_cpp ds_sensor_msgs_generate_messages_cpp ds_actuator_msgs_generate_messages_cpp)
 
 set(SENSORS_SRCS
     gazebo_src/depth_util.cc       gazebo_src/depth_util.hpp
@@ -78,21 +80,24 @@ add_dependencies(dsros_sensors ds_sim_gazebo_msgs)
 # dsros_ros_depth
 add_library(dsros_ros_depth src/dsros_depth_plugin.cc src/dsros_depth_plugin.hh)
 target_link_libraries(dsros_ros_depth dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_ros_depth ds_msgs_generate_messages_cpp)
+add_dependencies(dsros_ros_depth ds_core_msgs_generate_messages_cpp ds_sensor_msgs_generate_messages_cpp ds_actuator_msgs_generate_messages_cpp)
+
 
 # dsros_ros_ins
 add_library(dsros_ros_ins src/dsros_ins_plugin.cc src/dsros_ins_plugin.hh)
 target_link_libraries(dsros_ros_ins dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_ros_ins ds_msgs_generate_messages_cpp)
+add_dependencies(dsros_ros_ins ds_core_msgs_generate_messages_cpp ds_sensor_msgs_generate_messages_cpp ds_actuator_msgs_generate_messages_cpp)
+
 
 add_library(dsros_ros_dvl src/dsros_dvl_plugin.cc src/dsros_dvl_plugin.hh)
 target_link_libraries(dsros_ros_dvl dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_ros_dvl ds_msgs_generate_messages_cpp)
+add_dependencies(dsros_ros_dvl ds_core_msgs_generate_messages_cpp ds_sensor_msgs_generate_messages_cpp ds_actuator_msgs_generate_messages_cpp)
+
 
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES ds_sim
-  CATKIN_DEPENDS xacro ds_msgs roscpp gazebo_ros sensor_msgs
+  CATKIN_DEPENDS xacro roscpp gazebo_ros sensor_msgs ds_core_msgs ds_sensor_msgs ds_actuator_msgs
 #  DEPENDS system_lib
 )
 

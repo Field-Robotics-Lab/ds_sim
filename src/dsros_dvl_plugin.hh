@@ -14,7 +14,7 @@
 #include <ignition/math/Pose3.hh>
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud.h>
-#include <ds_msgs/DvlData.h>
+#include <ds_sensor_msgs/DvlData.h>
 #include <string>
 
 #include "../gazebo_src/dsros_dvl.hh"
@@ -51,7 +51,7 @@ private:
   /// \brief Depth publisher
   ros::Publisher dvl_data_publisher;
 
-  ds_msgs::DvlData msg;
+  ds_sensor_msgs::DvlData msg;
 
   // temporary stuff to make sure we're point our beams correctly
   ros::Publisher pt_data_publisher;

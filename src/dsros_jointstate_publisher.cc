@@ -13,8 +13,6 @@
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <ros/subscribe_options.h>
-#include <ds_msgs/ServoCmd.h>
-#include <ds_msgs/ServoState.h>
 #include <sensor_msgs/JointState.h>
 #include <thread>
 

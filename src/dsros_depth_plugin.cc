@@ -45,7 +45,7 @@ void dsrosRosDepthSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_)
 
     node = new ros::NodeHandle(this->robot_namespace);
 
-    depth_data_publisher = node->advertise<ds_msgs::DepthData>(topic_name, 1);
+    depth_data_publisher = node->advertise<ds_sensor_msgs::DepthData>(topic_name, 1);
     connection = gazebo::event::Events::ConnectWorldUpdateBegin(
                 boost::bind(&dsrosRosDepthSensor::UpdateChild, this, _1));
     last_time = sensor->LastUpdateTime();

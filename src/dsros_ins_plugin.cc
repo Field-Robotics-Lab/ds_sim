@@ -43,7 +43,7 @@ void dsrosRosInsSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
 
     node = new ros::NodeHandle(this->robot_namespace);
 
-    ins_publisher = node->advertise<ds_msgs::InsData>(ins_topic_name, 1);
+    ins_publisher = node->advertise<ds_sensor_msgs::InsData>(ins_topic_name, 1);
     att_publisher = node->advertise<geometry_msgs::QuaternionStamped>(att_topic_name, 1);
     connection = gazebo::event::Events::ConnectWorldUpdateBegin(
                 boost::bind(&dsrosRosInsSensor::UpdateChild, this, _1));

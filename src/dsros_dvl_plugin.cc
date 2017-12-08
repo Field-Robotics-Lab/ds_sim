@@ -44,7 +44,7 @@ void dsrosRosDvlSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
 
     node = new ros::NodeHandle(this->robot_namespace);
 
-    dvl_data_publisher = node->advertise<ds_msgs::DvlData>(topic_name, 1);
+    dvl_data_publisher = node->advertise<ds_sensor_msgs::DvlData>(topic_name, 1);
     pt_data_publisher  = node->advertise<sensor_msgs::PointCloud>(topic_name + "_cloud", 1);
     connection = gazebo::event::Events::ConnectWorldUpdateBegin(
                 boost::bind(&dsrosRosDvlSensor::UpdateChild, this, _1));
@@ -126,7 +126,7 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
             msg.beam_unit_vec[i].z = beamUnit.Z();
         }
 
-        msg.velocity_mode = ds_msgs::DvlData::DVL_COORD_INSTRUMENT;
+        msg.velocity_mode = ds_sensor_msgs::DvlData::DVL_COORD_INSTRUMENT;
         msg.unit_serial_number = 1.0;
         // milliseconds since midnight
         msg.unit_timestamp = (current_time.sec % 86400)*1000.0  + current_time.nsec / 1.0e6;
