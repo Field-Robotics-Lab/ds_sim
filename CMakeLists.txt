@@ -88,10 +88,15 @@ add_library(dsros_ros_ins src/dsros_ins_plugin.cc src/dsros_ins_plugin.hh)
 target_link_libraries(dsros_ros_ins dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(dsros_ros_ins ds_core_msgs_generate_messages_cpp ds_sensor_msgs_generate_messages_cpp ds_actuator_msgs_generate_messages_cpp)
 
-
+# DVL plugin
 add_library(dsros_ros_dvl src/dsros_dvl_plugin.cc src/dsros_dvl_plugin.hh)
 target_link_libraries(dsros_ros_dvl dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(dsros_ros_dvl ds_core_msgs_generate_messages_cpp ds_sensor_msgs_generate_messages_cpp ds_actuator_msgs_generate_messages_cpp)
+
+# GPS plugin
+add_library(dsros_ros_gps src/dsros_gps_plugin.cc src/dsros_gps_plugin.hh)
+target_link_libraries(dsros_ros_gps ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_ros_gps ds_core_msgs_generate_messages_cpp ds_sensor_msgs_generate_messages_cpp ds_actuator_msgs_generate_messages_cpp)
 
 
 catkin_package(
