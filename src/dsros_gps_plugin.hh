@@ -12,10 +12,10 @@
 #include <gazebo/common/UpdateInfo.hh>
 #include <ignition/math/Vector3.hh>
 #include <ros/ros.h>
-//#include <ds_sensor_msgs/InsData.h> // TODO
+#include <sensor_msgs/NavSatFix.h>
 #include <string>
 
-// TODO #include "../gazebo_src/dsros_ins.hh"
+#include <gazebo/sensors/GpsSensor.hh>
 
 namespace gazebo {
 
@@ -50,7 +50,7 @@ private:
   /// \brief INS data publisher
   ros::Publisher publisher;
 
-  //ds_sensor_msgs::GpsData ins_msg; // TODO
+  sensor_msgs::NavSatFix gps_msg;
 
   /// \brief last time on which the data was published.
   common::Time last_time;
@@ -59,7 +59,7 @@ private:
   gazebo::event::ConnectionPtr connection;
 
   /// \brief Pointer to the sensor.
-  // TODO std::shared_ptr<sensors::DsrosInsSensor> sensor;
+  std::shared_ptr<gazebo::sensors::GpsSensor> sensor;
 
   /// \brief Pointer to the sdf config file.
   sdf::ElementPtr sdf;
@@ -72,11 +72,14 @@ private:
   double update_rate;
     // noise, in meters, for
   double noiseLL_m, noiseZ_m;
+    double min_altitude;
 
   // actual core data
   common::Time data_time;
   std::string entity_name;
-  //ignition::math::Vector3d linear_accel;
+    double latitude;
+    double longitude;
+    double altitude;
 };
 
 }; // namespace gazebo

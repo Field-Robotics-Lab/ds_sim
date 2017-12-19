@@ -1,6 +1,6 @@
 // lots of this implementation blatently stolen from:
 // https://github.com/ros-simulation/gazebo_ros_pkgs/blob/kinetic-devel/gazebo_plugins/src/gazebo_ros_imu_sensor.cpp
-#include "dsros_ins_plugin.hh"
+#include "dsros_gps_plugin.hh"
 
 using namespace gazebo;
 
@@ -21,7 +21,7 @@ dsrosRosGpsSensor::~dsrosRosGpsSensor() {
 
 void dsrosRosGpsSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
     sdf = sdf_;
-    sensor = std::dynamic_pointer_cast<gazebo::sensors::DsrosGpsSensor>(sensor_);
+    sensor = std::dynamic_pointer_cast<gazebo::sensors::GpsSensor>(sensor_);
     if (sensor == NULL) {
         ROS_FATAL("Error! Unable to convert sensor pointer!");
         return;
@@ -40,8 +40,7 @@ void dsrosRosGpsSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
 
     node = new ros::NodeHandle(this->robot_namespace);
 
-    // TODO: Update types
-    publisher = node->advertise<ds_sensor_msgs::GpsData>(topic_name, 1);
+    publisher = node->advertise<sensor_msgs::NavSatFix>(topic_name, 1);
     connection = gazebo::event::Events::ConnectWorldUpdateBegin(
                 boost::bind(&dsrosRosGpsSensor::UpdateChild, this, _1));
     last_time = sensor->LastUpdateTime();
@@ -55,100 +54,82 @@ void dsrosRosGpsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         return;
     }
 
-    /*
-    if(ins_publisher.getNumSubscribers() > 0
+    if(publisher.getNumSubscribers() > 0) {
 
         // update our raw data
-        data_time = sensor->GetTime();
-        entity_name = sensor->GetEntityName();
-        orientation = sensor->GetOrientation();
-        angular_velocity = sensor->GetAngularVelocity();
-        linear_velocity = sensor->GetLinearVelocity();
-        linear_accel = sensor->GetLinearAcceleration();
-        latitude = sensor->GetLatitude();
+        data_time = sensor->LastMeasurementTime();
+        entity_name = frame_name;
+        latitude  = sensor->Latitude().Degree();
+        longitude = sensor->Longitude().Degree();
+        altitude  = sensor->Altitude();
 
-        // add noise
-        // In order to make the noise correct, define a tiny little 
-        // perturbation to the rotation measurement
-        ignition::math::Quaterniond noiseTform(GaussianKernel(0, noisePR),
-                                         GaussianKernel(0, noisePR),
-                                         GaussianKernel(0, noiseY));
-        // ... and then apply it to the measurement
-        orientation = noiseTform*orientation; 
+        double latrad = sensor->Latitude().Radian();
+        // use the mdeglat/mdeglon stuff from dslpp
+        double dx = 111415.13 * cos(latrad) - 94.55 * cos(3.0*latrad)
+            		+ 0.12 * cos(5.0*latrad);
+        double dy = 111132.09 - 566.05 * cos(2.0*latrad) + 1.20 * cos(4.0*latrad)
+                    - 0.002 * cos(6.0*latrad);
 
-        angular_velocity.X() += GaussianKernel(0, noiseAngVel);
-        angular_velocity.Y() += GaussianKernel(0, noiseAngVel);
-        angular_velocity.Z() += GaussianKernel(0, noiseAngVel);
 
-        linear_velocity.X() += GaussianKernel(0, noiseVel);
-        linear_velocity.Y() += GaussianKernel(0, noiseVel);
-        linear_velocity.Z() += GaussianKernel(0, noiseVel);
+        // We use local AlvinXY for this.  Its terrible, but we're using REALLY small
+        // displacements, so its valid most places
+        latitude  += GaussianKernel(0, noiseLL_m)/dy;
+        longitude += GaussianKernel(0, noiseLL_m)/dx;
+        altitude  += GaussianKernel(0, noiseZ_m);
 
-        linear_accel.X() += GaussianKernel(0, noiseAcc);
-        linear_accel.Y() += GaussianKernel(0, noiseAcc);
-        linear_accel.Z() += GaussianKernel(0, noiseAcc);
+        gps_msg.header.frame_id = frame_name;
+        gps_msg.header.stamp.sec = data_time.sec;
+        gps_msg.header.stamp.nsec = data_time.nsec;
+        gps_msg.header.seq++;
 
-        latitude += GaussianKernel(0, noiseLat);
-    }
+        // Only fill in valid data if we're above the minimum altitude
+        // (0 is the sea surface, so no GPS underwater!)
+        if (sensor->Altitude() > min_altitude) {
+            gps_msg.latitude = latitude;
+            gps_msg.longitude = longitude;
+            gps_msg.altitude = altitude;
+            gps_msg.status.status = gps_msg.status.STATUS_FIX;
+            gps_msg.status.service = gps_msg.status.SERVICE_GPS;
 
-    if(ins_publisher.getNumSubscribers() > 0) {
+            gps_msg.position_covariance[0] = noiseLL_m * noiseLL_m;
+            gps_msg.position_covariance[1] = 0;
+            gps_msg.position_covariance[2] = 0;
 
-        // prepare message header
-        ins_msg.header.frame_id = frame_name;
-        ins_msg.header.stamp.sec = data_time.sec;
-        ins_msg.header.stamp.nsec = data_time.nsec;
-        ins_msg.header.seq++;
+            gps_msg.position_covariance[3] = 0;
+            gps_msg.position_covariance[4] = noiseLL_m * noiseLL_m;
+            gps_msg.position_covariance[5] = 0;
 
-        ins_msg.orientation.x = orientation.X();
-        ins_msg.orientation.y = orientation.Y();
-        ins_msg.orientation.z = orientation.Z();
-        ins_msg.orientation.w = orientation.W();
+            gps_msg.position_covariance[6] = 0;
+            gps_msg.position_covariance[7] = 0;
+            gps_msg.position_covariance[8] = noiseZ_m * noiseZ_m;
 
-        ins_msg.linear_velocity.x = linear_velocity.X();
-        ins_msg.linear_velocity.y = linear_velocity.Y();
-        ins_msg.linear_velocity.z = linear_velocity.Z();
+            gps_msg.position_covariance_type = gps_msg.COVARIANCE_TYPE_DIAGONAL_KNOWN;
+        } else {
+            // if we're underwater, return no data
+            gps_msg.latitude = 0;
+            gps_msg.longitude = 0;
+            gps_msg.altitude = 0;
+            gps_msg.status.status = gps_msg.status.STATUS_NO_FIX;
+            gps_msg.status.service = gps_msg.status.SERVICE_GPS;
 
-        ins_msg.angular_velocity.x = angular_velocity.X();
-        ins_msg.angular_velocity.y = angular_velocity.Y();
-        ins_msg.angular_velocity.z = angular_velocity.Z();
+            gps_msg.position_covariance[0] = 0;
+            gps_msg.position_covariance[1] = 0;
+            gps_msg.position_covariance[2] = 0;
 
-        ins_msg.linear_acceleration.x = linear_accel.X();
-        ins_msg.linear_acceleration.y = linear_accel.Y();
-        ins_msg.linear_acceleration.z = linear_accel.Z();
+            gps_msg.position_covariance[3] = 0;
+            gps_msg.position_covariance[4] = 0;
+            gps_msg.position_covariance[5] = 0;
 
-        // use a local-level frame to get rotations correct
-        ignition::math::Quaterniond ll_rot = world2ll*orientation;
-        ins_msg.roll = ll_rot.Roll()*180.0/M_PI;
-        ins_msg.pitch = ll_rot.Pitch()*180.0/M_PI;
-        ins_msg.heading = ll_rot.Yaw()*180.0/M_PI;
-        if (ins_msg.heading > 360.0) {
-            ins_msg.heading -= 360.0;
-        } else if (ins_msg.heading < 0.0) {
-            ins_msg.heading += 360.0;
+            gps_msg.position_covariance[6] = 0;
+            gps_msg.position_covariance[7] = 0;
+            gps_msg.position_covariance[8] = 0;
+
+            gps_msg.position_covariance_type = gps_msg.COVARIANCE_TYPE_UNKNOWN;
         }
 
-        ins_msg.latitude = latitude;
-
-        // publish data
-        ins_publisher.publish(ins_msg);
+        publisher.publish(gps_msg);
         ros::spinOnce();
     }
-
-    if (att_publisher.getNumSubscribers() > 0) {
-        att_msg.header.frame_id = frame_name;
-        att_msg.header.stamp.sec = data_time.sec;
-        att_msg.header.stamp.nsec = data_time.nsec;
-        att_msg.header.seq++;
-
-        att_msg.quaternion.x = orientation.X();
-        att_msg.quaternion.y = orientation.Y();
-        att_msg.quaternion.z = orientation.Z();
-        att_msg.quaternion.w = orientation.W();
-
-        att_publisher.publish(att_msg);
-        ros::spinOnce();
-    }
-     */
 
     last_time = current_time;
 }
@@ -186,7 +167,7 @@ bool dsrosRosGpsSensor::LoadParameters() {
   }
 
   //TOPICS
-  if (sdf->HasElement("insTopicName"))
+  if (sdf->HasElement("topicName"))
   {
     topic_name =  sdf->Get<std::string>("topicName");
     ROS_INFO_STREAM("<topicName> set to: "<<topic_name);
@@ -221,6 +202,17 @@ bool dsrosRosGpsSensor::LoadParameters() {
     ROS_WARN_STREAM("missing <updateRateHZ>, set to default: " << update_rate);
   }
 
+    // MINIMUM_ALTITUDE
+    if (sdf->HasElement("minAltitude")) {
+        min_altitude = sdf->Get<double>("minAltitude");
+        ROS_INFO_STREAM("<minAltitude> set to: " << min_altitude);
+    } else {
+        min_altitude = 0.0;
+        ROS_INFO_STREAM("missing <minAltitude> set to default: " << min_altitude);
+    }
+
+
+    // noise states
   noiseLL_m   = LoadNoise("gaussianNoiseLL_meters", 1);
   noiseZ_m    = LoadNoise("gaussianNoiseAlt_meters", 1);
 
