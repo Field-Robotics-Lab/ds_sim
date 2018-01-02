@@ -44,7 +44,7 @@ void dsrosRosDvlSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
 
     node = new ros::NodeHandle(this->robot_namespace);
 
-    dvl_data_publisher = node->advertise<ds_sensor_msgs::DvlData>(topic_name, 1);
+    dvl_data_publisher = node->advertise<ds_sensor_msgs::Dvl>(topic_name, 1);
     pt_data_publisher  = node->advertise<sensor_msgs::PointCloud>(topic_name + "_cloud", 1);
     connection = gazebo::event::Events::ConnectWorldUpdateBegin(
                 boost::bind(&dsrosRosDvlSensor::UpdateChild, this, _1));
@@ -98,35 +98,39 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         msg.header.stamp.nsec = current_time.nsec;
         msg.header.seq++;
 
+        msg.ds_header.io_time.sec = current_time.sec;
+        msg.ds_header.io_time.nsec = current_time.nsec;
+
         msg.velocity.x = velocity(0);
         msg.velocity.y = velocity(1);
         msg.velocity.z = velocity(2);
 
-        msg.velocity_covar[0] = gaussian_noise_vel;
+        msg.velocity_covar[0] = gaussian_noise_vel*gaussian_noise_vel;
         msg.velocity_covar[1] = 0;
         msg.velocity_covar[2] = 0;
 
         msg.velocity_covar[3] = 0;
-        msg.velocity_covar[4] = gaussian_noise_vel;
+        msg.velocity_covar[4] = gaussian_noise_vel*gaussian_noise_vel;
         msg.velocity_covar[5] = 0;
 
         msg.velocity_covar[6] = 0;
         msg.velocity_covar[7] = 0;
-        msg.velocity_covar[8] = gaussian_noise_vel;
+        msg.velocity_covar[8] = gaussian_noise_vel*gaussian_noise_vel;
 
         msg.num_good_beams = sensor->ValidBeams();
         msg.speed_sound = 1500.0;
 
         for (size_t i=0; i<sensor->NumBeams(); i++) {
             msg.range[i] = ranges[i];
-            msg.range_covar[i] = gaussian_noise_vel;
+            msg.range_covar[i] = gaussian_noise_range*gaussian_noise_range;
             ignition::math::Vector3d beamUnit = sensor->GetBeamUnitVec(i);
             msg.beam_unit_vec[i].x = beamUnit.X();
             msg.beam_unit_vec[i].y = beamUnit.Y();
             msg.beam_unit_vec[i].z = beamUnit.Z();
         }
 
-        msg.velocity_mode = ds_sensor_msgs::DvlData::DVL_COORD_INSTRUMENT;
+        msg.velocity_mode = ds_sensor_msgs::Dvl::DVL_MODE_BOTTOM;
+        msg.coordinate_mode = ds_sensor_msgs::Dvl::DVL_COORD_INSTRUMENT;
         msg.unit_serial_number = 1.0;
         // milliseconds since midnight
         msg.unit_timestamp = (current_time.sec % 86400)*1000.0  + current_time.nsec / 1.0e6;
