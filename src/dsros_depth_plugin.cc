@@ -45,7 +45,7 @@ void dsrosRosDepthSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_)
 
     node = new ros::NodeHandle(this->robot_namespace);
 
-    depth_data_publisher = node->advertise<ds_sensor_msgs::DepthData>(topic_name, 1);
+    depth_data_publisher = node->advertise<ds_sensor_msgs::DepthPressure>(topic_name, 1);
     connection = gazebo::event::Events::ConnectWorldUpdateBegin(
                 boost::bind(&dsrosRosDepthSensor::UpdateChild, this, _1));
     last_time = sensor->LastUpdateTime();
@@ -70,13 +70,17 @@ void dsrosRosDepthSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         msg.header.stamp.nsec = current_time.nsec;
         msg.header.seq++;
 
-        msg.pressure_dbar = pressure + GaussianKernel(0, gaussian_noise);
+        msg.ds_header.io_time.sec = current_time.sec;
+        msg.ds_header.io_time.nsec = current_time.nsec;
 
-        msg.pressure_tare_dbar = 10.1325; // 1 atm
-        msg.raw = msg.pressure_dbar + msg.pressure_tare_dbar;
+        msg.pressure = pressure + GaussianKernel(0, gaussian_noise);
+        msg.pressure_raw_unit = ds_sensor_msgs::DepthPressure::UNIT_PRESSURE_DBAR;
+
+        msg.tare = 10.1325; // 1 atm
+        msg.pressure_raw = msg.pressure + msg.tare;
         msg.latitude = latitude;
-        msg.depth = fofonoff_depth(msg.pressure_dbar, msg.latitude);
-        msg.depth_covar = gaussian_noise * gaussian_noise;
+        msg.depth = fofonoff_depth(msg.pressure, msg.latitude);
+        msg.pressure_covar = gaussian_noise * gaussian_noise;
 
         // publish data
         depth_data_publisher.publish(msg);

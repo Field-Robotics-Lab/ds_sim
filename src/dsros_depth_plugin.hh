@@ -13,7 +13,7 @@
 #include <ignition/math/Vector3.hh>
 #include <ignition/math/Pose3.hh>
 #include <ros/ros.h>
-#include <ds_sensor_msgs/DepthData.h>
+#include <ds_sensor_msgs/DepthPressure.h>
 #include <string>
 
 #include "../gazebo_src/dsros_depth.hh"
@@ -50,7 +50,7 @@ private:
   /// \brief Depth publisher
   ros::Publisher depth_data_publisher;
 
-  ds_sensor_msgs::DepthData msg;
+  ds_sensor_msgs::DepthPressure msg;
 
   /// \brief last time on which the data was published.
   common::Time last_time;

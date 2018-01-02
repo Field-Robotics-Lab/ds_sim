@@ -14,7 +14,7 @@
 #include <ignition/math/Quaternion.hh>
 #include <ignition/math/Pose3.hh>
 #include <ros/ros.h>
-#include <ds_sensor_msgs/InsData.h>
+#include <ds_sensor_msgs/Ins.h>
 #include <string>
 #include <geometry_msgs/QuaternionStamped.h>
 
@@ -56,7 +56,7 @@ private:
   /// \brief Attitude data publisher
   ros::Publisher att_publisher;
 
-  ds_sensor_msgs::InsData ins_msg;
+  ds_sensor_msgs::Ins ins_msg;
   geometry_msgs::QuaternionStamped att_msg;
 
   /// \brief last time on which the data was published.
