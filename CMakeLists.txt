@@ -47,7 +47,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 # dsros_jointstate_publisher
 add_library(dsros_jointstate_publisher src/dsros_jointstate_publisher.cc)
 target_link_libraries(dsros_jointstate_publisher ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_jointstate_publisher ds_core_msgs_generate_messages_cpp ds_sensor_msgs_generate_messages_cpp ds_actuator_msgs_generate_messages_cpp)
+add_dependencies(dsros_jointstate_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 set(SENSORS_SRCS
     gazebo_src/depth_util.cc       gazebo_src/depth_util.hpp
@@ -62,48 +62,32 @@ add_library(dsros_sensors ${SENSORS_SRCS})
 target_link_libraries(dsros_sensors ds_sim_gazebo_msgs ${GAZEBO_LIBRARIES})
 add_dependencies(dsros_sensors ds_sim_gazebo_msgs)
 
-# dsros_servo
-#add_library(dsros_servo src/dsros_servo.cc)
-#target_link_libraries(dsros_servo ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-#add_dependencies(dsros_servo ds_msgs_generate_messages_cpp)
-
-# dsros_thruster
-#add_library(dsros_thruster src/dsros_thruster.cc)
-#target_link_libraries(dsros_thruster ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-#add_dependencies(dsros_thruster ds_msgs_generate_messages_cpp)
-
-# dsros_dropweights
-#add_library(dsros_dropweights src/dsros_dropweights.cc)
-#target_link_libraries(dsros_dropweights ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-#add_dependencies(dsros_dropweights ds_msgs_generate_messages_cpp)
-
 # dsros_ros_depth
 add_library(dsros_ros_depth src/dsros_depth_plugin.cc src/dsros_depth_plugin.hh)
 target_link_libraries(dsros_ros_depth dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_ros_depth ds_core_msgs_generate_messages_cpp ds_sensor_msgs_generate_messages_cpp ds_actuator_msgs_generate_messages_cpp)
-
+add_dependencies(dsros_ros_depth ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # dsros_ros_ins
 add_library(dsros_ros_ins src/dsros_ins_plugin.cc src/dsros_ins_plugin.hh)
 target_link_libraries(dsros_ros_ins dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_ros_ins ds_core_msgs_generate_messages_cpp ds_sensor_msgs_generate_messages_cpp ds_actuator_msgs_generate_messages_cpp)
+add_dependencies(dsros_ros_ins ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # DVL plugin
 add_library(dsros_ros_dvl src/dsros_dvl_plugin.cc src/dsros_dvl_plugin.hh)
 target_link_libraries(dsros_ros_dvl dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_ros_dvl ds_core_msgs_generate_messages_cpp ds_sensor_msgs_generate_messages_cpp ds_actuator_msgs_generate_messages_cpp)
+add_dependencies(dsros_ros_dvl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # GPS plugin
 add_library(dsros_ros_gps src/dsros_gps_plugin.cc src/dsros_gps_plugin.hh)
 target_link_libraries(dsros_ros_gps ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_ros_gps ds_core_msgs_generate_messages_cpp ds_sensor_msgs_generate_messages_cpp ds_actuator_msgs_generate_messages_cpp)
+add_dependencies(dsros_ros_gps ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES ds_sim
+  #LIBRARIES ds_sim_gazebo_msgs  dsros_jointstate_publisher dsros_sensors dsros_ros_depth dsros_ros_ins dsros_ros_dvl dsros_ros_gps
   CATKIN_DEPENDS xacro roscpp gazebo_ros sensor_msgs ds_core_msgs ds_sensor_msgs ds_actuator_msgs
-#  DEPENDS system_lib
+  DEPENDS protobuf-compiler
 )
 
 ## Install project namespaced headers
