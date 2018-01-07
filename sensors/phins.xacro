@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-<xacro:macro name="phins" params="name parent_link xyz rpy robot_namespace ins_topic att_topic">
+<xacro:macro name="phins" params="name parent_link xyz rpy **sim">
 
   <link name="${name}_link">
     <visual>
@@ -12,36 +12,17 @@
       <material name="grey"/>
     </visual>
   </link>
-  <gazebo reference="${name}_link">
-    <material>Gazebo/Grey</material>
-  </gazebo>
-
-  <gazebo reference="${parent_link}">
-    <sensor name="${name}_sensor" type="dsros_ins">
-      <always_on>1</always_on>
-      <update_rate>10.000</update_rate>
-      <pose frame="">${xyz} ${rpy}</pose>
-      <plugin name="${name}_sensor_controller" filename="libdsros_ros_ins.so">
-        <robotNamespace>${robot_namespace}</robotNamespace>
-        <insTopicName>${ins_topic}</insTopicName>
-        <attTopicName>${att_topic}</attTopicName>
-        <frameName>world</frameName>
-        <updateRateHZ>10</updateRateHZ>
-        <gaussianNoisePR>0.001</gaussianNoisePR>
-        <gaussianNoiseY>0.01</gaussianNoiseY>
-        <gaussianNoiseVel>0.01</gaussianNoiseVel>
-        <gaussianNoiseAngVel>0.01</gaussianNoiseAngVel>
-        <gaussianNoiseAcc>0.01</gaussianNoiseAcc>
-        <gaussianNoiseLat>0.1</gaussianNoiseLat>
-      </plugin>
-    </sensor>
-  </gazebo>
 
   <joint name="base_to_phins" type="fixed">
     <parent link="${parent_link}"/>
     <child link="${name}_link"/>
     <origin xyz="${xyz}" rpy="${rpy}"/>
   </joint>
+
+
+  <!-- Gazebo sim stuff, if applicable -->
+  <xacro:insert_block name="sim"/>
+
 </xacro:macro>
 
 </robot>

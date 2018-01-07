@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-<xacro:macro name="avtrak" params="name parent_link xyz rpy">
+<xacro:macro name="avtrak" params="name parent_link xyz rpy **sim">
   <!-- First, define the link -->
   <link name="${name}">
     <visual>
@@ -20,7 +20,8 @@
     <origin xyz="${xyz}" rpy="${rpy}"/>
   </joint>
 
-  <!-- TODO: Gazebo plugin to actually take measurements! -->
+  <!-- Gazebo stuff for Avtrak, if applicable -->
+  <xacro:insert_block name="sim"/>
 
 </xacro:macro>
 

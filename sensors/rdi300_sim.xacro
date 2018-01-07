@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:macro name="rdi_workhorse_300_sim" params="name parent_link xyz rpy robot_namespace dvl_topic">
+  <gazebo reference="${name}_link">
+    <material>Gazebo/Green</material>
+  </gazebo>
+  <gazebo reference="${parent_link}">
+    <sensor name="${name}_sensor" type="dsros_dvl">
+      <always_on>1</always_on>
+      <update_rate>2.0</update_rate>
+      <pose frame="">${xyz} ${rpy}</pose>
+      <!-- doesn't do anything atm.  Bummer.
+      <dvl>
+        300kHz DVL
+        <minRange>1.0</minRange>
+        <maxRange>200</maxRange>
+        <maxRangeDiff>10</maxRangeDiff>
+        <beamAngleDeg>30.0</beamAngleDeg>
+        <beamWidthDeg>4.0</beamWidthDeg>
+      </dvl>
+      -->
+      <plugin name="${name}_sensor_controller" filename="libdsros_ros_dvl.so">
+        <robotNamespace>${robot_namespace}</robotNamespace>
+        <topicName>${dvl_topic}</topicName>
+        <frameName>${name}</frameName>
+        <pointcloudFrame>${parent_link}</pointcloudFrame>
+        <updateRateHZ>2.0</updateRateHZ>
+        <gaussianNoiseBeamVel>0.01</gaussianNoiseBeamVel>
+        <gaussianNoiseBeamRange>0.1</gaussianNoiseBeamRange>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+        <!--  600kHz DVL -->
+        <!--
+        <minRange>0.7</minRange>
+        <maxRange>90</maxRange>
+        <maxRangeDiff>10</maxRangeDiff>
+        <beamAngleDeg>30.0</beamAngleDeg>
+        <beamWidthDeg>2.0</beamWidthDeg>
+        -->
+
+        <!-- 1200kHz DVL -->
+        <!--
+        <minRange>0.5</minRange>
+        <maxRange>45</maxRange>
+        <maxRangeDiff>10</maxRangeDiff>
+        <beamAngleDeg>30.0</beamAngleDeg>
+        <beamWidthDeg>1.5</beamWidthDeg>
+        -->
+
+</xacro:macro>
+
+</robot>
+

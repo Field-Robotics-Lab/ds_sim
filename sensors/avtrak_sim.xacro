@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:macro name="avtrak_sim" params="name parent_link xyz rpy robot_namespace topic">
+   <gazebo reference="${name}_link">
+     <material>Gazebo/Black</material>
+   </gazebo>
+
+   <!-- TODO: Gazebo plugin to actually take measurements! -->
+
+</xacro:macro>
+
+
+</robot>
+
