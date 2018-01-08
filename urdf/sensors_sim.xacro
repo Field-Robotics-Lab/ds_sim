@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-<xacro:include filename="$(find ds_sim)/sensors/phins_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/sensors/paro_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/sensors/rdi300_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/sensors/xeos_gps_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/sensors/avtrak_sim.xacro"/>
+<xacro:include filename="$(find ds_sim)/urdf/phins_sim.xacro"/>
+<xacro:include filename="$(find ds_sim)/urdf/paro_sim.xacro"/>
+<xacro:include filename="$(find ds_sim)/urdf/rdi300_sim.xacro"/>
+<xacro:include filename="$(find ds_sim)/urdf/xeos_gps_sim.xacro"/>
+<xacro:include filename="$(find ds_sim)/urdf/avtrak_sim.xacro"/>
 
 </robot>
 
