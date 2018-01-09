@@ -99,3 +99,21 @@ void fillWrench(geometry_msgs::Wrench& ret, const gazebo::math::Vector3& xyz, co
 }
 
 
+template <typename T>
+void fillTwistFossen(T& ret, const gazebo::math::Vector3& xyz, const gazebo::math::Vector3& rph) {
+    ret.linear.x = xyz[0];
+    ret.linear.y = -xyz[1];
+    ret.linear.z = -xyz[2];
+    ret.angular.x= rph[0];
+    ret.angular.y= rph[1];
+    ret.angular.z= rph[2];
+}
+void fillWrenchFossen(geometry_msgs::Wrench& ret, const gazebo::math::Vector3& xyz, const gazebo::math::Vector3& rph) {
+    ret.force.x = xyz[0];
+    ret.force.y = -xyz[1];
+    ret.force.z = -xyz[2];
+    ret.torque.x= rph[0];
+    ret.torque.y= rph[1];
+    ret.torque.z= rph[2];
+}
+
