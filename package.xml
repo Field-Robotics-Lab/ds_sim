@@ -21,7 +21,6 @@
   <build_depend>xacro</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>sensor_msgs</build_depend>
-  <build_depend>protobuf-compiler</build_depend>
   <build_depend>libeigen3-dev</build_depend>
   <build_export_depend>gazebo_ros</build_export_depend>
   <build_export_depend>xacro</build_export_depend>
@@ -33,6 +32,7 @@
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>ros-kinetic-joystick-drivers</exec_depend>
+  <exec_depend>protobuf-compiler</exec_depend>
 
   <build_depend>ds_actuator_msgs</build_depend>
   <build_depend>ds_core_msgs</build_depend>
