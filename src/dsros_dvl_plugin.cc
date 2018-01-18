@@ -131,9 +131,11 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
 
         msg.velocity_mode = ds_sensor_msgs::Dvl::DVL_MODE_BOTTOM;
         msg.coordinate_mode = ds_sensor_msgs::Dvl::DVL_COORD_INSTRUMENT;
-        msg.unit_serial_number = 1.0;
+	// SS - unit_serial_number is not a part of Dvl.msg anymore
+        //msg.unit_serial_number = 1.0;
         // milliseconds since midnight
-        msg.unit_timestamp = (current_time.sec % 86400)*1000.0  + current_time.nsec / 1.0e6;
+	// SS - changed from unit_timestamp to dvl_time
+        msg.dvl_time = (current_time.sec % 86400)*1000.0  + current_time.nsec / 1.0e6;
 
         // publish data
         dvl_data_publisher.publish(msg);
