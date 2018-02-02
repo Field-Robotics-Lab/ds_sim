@@ -21,28 +21,37 @@
   <build_depend>xacro</build_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>sensor_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
   <build_depend>libeigen3-dev</build_depend>
+  <build_depend>tf</build_depend>
   <build_export_depend>gazebo_ros</build_export_depend>
   <build_export_depend>xacro</build_export_depend>
   <build_export_depend>sensor_msgs</build_export_depend>
+  <build_export_depend>geometry_msgs</build_export_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>libeigen3-dev</build_export_depend>
+  <build_export_depend>tf</build_export_depend>
   <exec_depend>gazebo_ros</exec_depend>
   <exec_depend>xacro</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>ros-kinetic-joystick-drivers</exec_depend>
   <exec_depend>protobuf-compiler</exec_depend>
+  <exec_depend>tf</exec_depend>
 
   <build_depend>ds_actuator_msgs</build_depend>
   <build_depend>ds_core_msgs</build_depend>
   <build_depend>ds_sensor_msgs</build_depend>
+  <build_depend>ds_nav_msgs</build_depend>
   <build_export_depend>ds_actuator_msgs</build_export_depend>
   <build_export_depend>ds_core_msgs</build_export_depend>
   <build_export_depend>ds_sensor_msgs</build_export_depend>
+  <build_export_depend>ds_nav_msgs</build_export_depend>
   <exec_depend>ds_actuator_msgs</exec_depend>
   <exec_depend>ds_core_msgs</exec_depend>
   <exec_depend>ds_sensor_msgs</exec_depend>
+  <exec_depend>ds_nav_msgs</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

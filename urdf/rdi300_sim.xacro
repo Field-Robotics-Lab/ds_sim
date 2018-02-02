@@ -23,7 +23,7 @@
       <plugin name="${name}_sensor_controller" filename="libdsros_ros_dvl.so">
         <robotNamespace>${robot_namespace}</robotNamespace>
         <topicName>${dvl_topic}</topicName>
-        <frameName>${name}</frameName>
+        <frameName>${name}_link</frameName>
         <pointcloudFrame>${parent_link}</pointcloudFrame>
         <updateRateHZ>2.0</updateRateHZ>
         <gaussianNoiseBeamVel>0.01</gaussianNoiseBeamVel>

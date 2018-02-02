@@ -7,9 +7,12 @@ find_package(catkin REQUIRED COMPONENTS
   ds_core_msgs
   ds_actuator_msgs
   ds_sensor_msgs
+        ds_nav_msgs
   roscpp
   sensor_msgs
+        geometry_msgs
   gazebo_ros
+        tf
 )
 
 find_package(gazebo REQUIRED)
@@ -48,6 +51,11 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_library(dsros_jointstate_publisher src/dsros_jointstate_publisher.cc)
 target_link_libraries(dsros_jointstate_publisher ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(dsros_jointstate_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+# dsros_navstate_publisher
+add_library(dsros_navstate_publisher src/dsros_navstate_publisher.cc)
+target_link_libraries(dsros_navstate_publisher ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_navstate_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 set(SENSORS_SRCS
     gazebo_src/depth_util.cc       gazebo_src/depth_util.hpp
