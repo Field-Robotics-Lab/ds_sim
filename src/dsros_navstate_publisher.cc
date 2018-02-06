@@ -147,7 +147,7 @@ class DsNavStatePublisher : public ModelPlugin {
     state_msg.p.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
     state_msg.p.value = vehAngVel.x;
     state_msg.q.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
-    state_msg.q.value = vehAngVel.y;
+    state_msg.q.value = -vehAngVel.y;
     state_msg.r.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
     state_msg.r.value = -vehAngVel.z;
 
