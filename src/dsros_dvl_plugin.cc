@@ -129,6 +129,8 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
             msg.beam_unit_vec[i].z = beamUnit.Z();
         }
 
+        ROS_INFO_STREAM("DVL_SENDING_INST: " <<velocity(0) <<" " <<velocity(1) <<" " <<velocity(2));
+
         msg.velocity_mode = ds_sensor_msgs::Dvl::DVL_MODE_BOTTOM;
         msg.coordinate_mode = ds_sensor_msgs::Dvl::DVL_COORD_INSTRUMENT;
         msg.dvl_time = static_cast<double>(current_time.sec) + static_cast<double>(current_time.nsec)/1.0e9;

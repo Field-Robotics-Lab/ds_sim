@@ -16,6 +16,7 @@
 #include <Eigen/Core>
 #include <Eigen/SVD>
 #include <limits>
+#include <iomanip>
 
 
 using namespace gazebo;
@@ -121,8 +122,9 @@ void DsrosDvlBeam::Update(const physics::WorldPtr& world,
         //gzdbg <<"ENTITY: " <<entityVel.X() <<", " <<entityVel.Y() <<", " <<entityVel.Z() <<"\n";
 
         //gzdbg <<"intersection: " <<intersection.X() <<","  <<intersection.Y() <<","  <<intersection.Z() <<"\n";
-        //beamVelocity = beamUnitVector.Dot(world2inst.RotateVector(sensorVel - entityVel));
-        beamVelocity = beamUnitVector.Dot(inst2world.Rot().RotateVectorReverse(sensorVel - entityVel));
+        ignition::math::Vector3d inst_rel_vel = inst2world.Rot().RotateVectorReverse(sensorVel - entityVel);
+        //gzmsg <<"\tinst_relative vel: " <<inst_rel_vel.X() <<","  <<inst_rel_vel.Y() <<","  <<inst_rel_vel.Z() <<"\n";
+        beamVelocity = beamUnitVector.Dot(inst_rel_vel);
     } else {
         gzdbg <<"NULL contact entity!";
     }
@@ -302,12 +304,11 @@ bool DsrosDvlSensor::UpdateImpl(const bool _force) {
     std::lock_guard<std::mutex> lock(this->mutex);
 
     // update each beam
+    ignition::math::Pose3d vehPose = this->parentLink->GetWorldPose().Ign();
     ignition::math::Vector3d bodyLinearVel = this->parentLink->GetWorldLinearVel().Ign();
     ignition::math::Vector3d bodyAngularVel = this->parentLink->GetWorldAngularVel().Ign();
-    ignition::math::Vector3d sensorVel = bodyLinearVel + bodyAngularVel.Cross(this->pose.Pos());
+    ignition::math::Vector3d sensorVel = bodyLinearVel + vehPose.Rot().RotateVector(bodyAngularVel.Cross(this->pose.Pos()));
     ignition::math::Pose3d sensorPose = this->pose + this->parentLink->GetWorldPose().Ign();
-
-    //ignition::math::Vector3d bodyVel = this->parentLink->GetWorldPose().Ign().Rot().RotateVectorReverse(bodyLinearVel);
 
     // Compute a solution for all beams
     int valid_beams = 0;
@@ -344,8 +345,12 @@ bool DsrosDvlSensor::UpdateImpl(const bool _force) {
         linear_velocity.Y( inst_vel(1) );
         linear_velocity.Z( inst_vel(2) );
 
-        //gzdbg <<" comp. vel: (" <<inst_vel(0) <<"," <<inst_vel(1) <<"," <<inst_vel(2) <<")"
-        //      <<" orig. vel: (" <<bodyVel.X() <<"," <<bodyVel.Y() <<"," <<bodyVel.Z() <<")\n";
+        //ignition::math::Vector3d stefVel = sensorPose.Rot().RotateVector(linear_velocity);
+        //ignition::math::Vector3d bodyVel = vehPose.Rot().RotateVectorReverse(bodyLinearVel);
+
+        //gzdbg <<" comp. vel: (" <<inst_vel(0) <<"," <<inst_vel(1) <<"," <<inst_vel(2) <<")\n"
+              //<<" orig. vel: (" <<bodyVel.X() <<"," <<bodyVel.Y() <<"," <<bodyVel.Z() <<")\n"
+              //<<" stef. vel: (" <<stefVel.X() <<"," <<stefVel.Y() <<"," <<stefVel.Z() <<")\n";
     }
 
     // fill in the message

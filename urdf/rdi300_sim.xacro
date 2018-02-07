@@ -26,8 +26,12 @@
         <frameName>${name}_link</frameName>
         <pointcloudFrame>${parent_link}</pointcloudFrame>
         <updateRateHZ>2.0</updateRateHZ>
+        <!--
         <gaussianNoiseBeamVel>0.01</gaussianNoiseBeamVel>
         <gaussianNoiseBeamRange>0.1</gaussianNoiseBeamRange>
+        -->
+        <gaussianNoiseBeamVel>0.00</gaussianNoiseBeamVel>
+        <gaussianNoiseBeamRange>0.0</gaussianNoiseBeamRange>
       </plugin>
     </sensor>
   </gazebo>

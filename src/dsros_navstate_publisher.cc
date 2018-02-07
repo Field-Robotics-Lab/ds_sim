@@ -209,8 +209,7 @@ class DsNavStatePublisher : public ModelPlugin {
     } else {
       // if we're not broadcasting directly, STILL send a tf but use a different name and re-order it so that
       // there is a single unambiguous transform root
-      tform.inverse();
-      tform_broadcaster.sendTransform(tf::StampedTransform(tform, now, base_link_name, tf_frame_name));
+      tform_broadcaster.sendTransform(tf::StampedTransform(tform.inverse(), now, base_link_name, tf_frame_name));
     }
 
     // update housekeeping data
