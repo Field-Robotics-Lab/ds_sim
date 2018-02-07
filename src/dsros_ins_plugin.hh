@@ -13,8 +13,9 @@
 #include <ignition/math/Vector3.hh>
 #include <ignition/math/Quaternion.hh>
 #include <ignition/math/Pose3.hh>
+#include  <ds_sensor_msgs/Ins.h>
+#include  <ds_sensor_msgs/Gyro.h>
 #include <ros/ros.h>
-#include <ds_sensor_msgs/Ins.h>
 #include <string>
 #include <geometry_msgs/QuaternionStamped.h>
 
@@ -53,10 +54,14 @@ private:
   /// \brief INS data publisher
   ros::Publisher ins_publisher;
 
+  /// \brief Publish gyro messages based on INS data
+  ros::Publisher gyro_publisher;
+
   /// \brief Attitude data publisher
   ros::Publisher att_publisher;
 
   ds_sensor_msgs::Ins ins_msg;
+  ds_sensor_msgs::Gyro gyro_msg;
   geometry_msgs::QuaternionStamped att_msg;
 
   /// \brief last time on which the data was published.
@@ -73,6 +78,7 @@ private:
 
   std::string robot_namespace;
   std::string ins_topic_name;
+  std::string gyro_topic_name;
   std::string att_topic_name;
   std::string frame_name;
 

@@ -69,15 +69,44 @@ class DsNavStatePublisher : public ModelPlugin {
       base_link_name = _sdf->Get<std::string>("base_link");
     }
 
+    // Connect to the ROS node
+    ROS_INFO_STREAM("dsros_navstate_publisher: Initializing internal ROS node...");
+    rosNode.reset(new ros::NodeHandle(robotNamespace));
+
+
+    // Read the ROS BROADCAST flag
     enable_tf_broadcast = true;
     if (_sdf->HasElement("enable_tf")) {
       enable_tf_broadcast = _sdf->Get<bool>("enable_tf");
     }
+    if (rosNode->hasParam("sim/enable_tf_broadcast")) {
+      rosNode->getParam("sim/enable_tf_broadcast", enable_tf_broadcast);
+    } else {
+      ROS_WARN_STREAM("Using XACRO for dsros_navstate_publisher::enable_tf_broadcast."
+                          <<" To change, try setting rosparam "
+                          <<rosNode->resolveName("enable_tf_broadcast"));
+    }
+    // read the TF Frame to use if enable_tf_broadcast is off
+    tf_frame_name = frame_id;
+    if (_sdf->HasElement("tf_frame_name")) {
+      tf_frame_name = _sdf->Get<std::string>("tf_frame_name");
+    }
+    if (rosNode->hasParam("sim/tf_frame_name")) {
+      rosNode->getParam("sim/tf_frame_name", tf_frame_name);
+    }
 
-
-    // Connect to the ROS node
-    ROS_INFO_STREAM("dsros_navstate_publisher: Initializing internal ROS node...");
-    rosNode.reset(new ros::NodeHandle(robotNamespace));
+    // read the navstate broadcast enable flag
+    enable_navstate_broadcast = true;
+    if (_sdf->HasElement("enable_navstate")) {
+      enable_navstate_broadcast = _sdf->Get<bool>("enable_navstate");
+    }
+    if (rosNode->hasParam("sim/enable_navstate_broadcast")) {
+      rosNode->getParam("sim/enable_navstate_broadcast", enable_navstate_broadcast);
+    } else {
+      ROS_WARN_STREAM("Using XACRO for dsros_navstate_publisher::enable_navstate_broadcast."
+                          <<" To change, try setting rosparam "
+                          <<rosNode->resolveName("enable_navstate_broadcast"));
+    }
 
     // prepare some reference times
     double updateRate = 10;
@@ -89,7 +118,9 @@ class DsNavStatePublisher : public ModelPlugin {
 
     // Setup our publisher
     ROS_INFO_STREAM("dsros_navstate_publisher: Advertising topic to publish on...");
-    navstatePub = rosNode->advertise<ds_nav_msgs::AggregatedState>(navstate_topic, 10);
+    if (enable_navstate_broadcast) {
+      navstatePub = rosNode->advertise<ds_nav_msgs::AggregatedState>(navstate_topic, 10);
+    }
     posePub = rosNode->advertise<geometry_msgs::PoseStamped>(pose_topic, 10);
 
     // Listen to the update event
@@ -151,7 +182,9 @@ class DsNavStatePublisher : public ModelPlugin {
     state_msg.r.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
     state_msg.r.value = -vehAngVel.z;
 
-    navstatePub.publish(state_msg);
+    if (enable_navstate_broadcast) {
+      navstatePub.publish(state_msg);
+    }
 
     // publish a pose for comparison in rviz
     geometry_msgs::PoseStamped pose_msg;
@@ -168,11 +201,16 @@ class DsNavStatePublisher : public ModelPlugin {
     posePub.publish(pose_msg);
 
     // publish a TF
+    tf::Transform tform;
+    tform.setOrigin(tf::Vector3(vehPose.pos.x, vehPose.pos.y, vehPose.pos.z));
+    tform.setRotation(tf::Quaternion(vehPose.rot.x, vehPose.rot.y, vehPose.rot.z, vehPose.rot.w));
     if (enable_tf_broadcast) {
-      tf::Transform tform;
-      tform.setOrigin(tf::Vector3(vehPose.pos.x, vehPose.pos.y, vehPose.pos.z));
-      tform.setRotation(tf::Quaternion(vehPose.rot.x, vehPose.rot.y, vehPose.rot.z, vehPose.rot.w));
       tform_broadcaster.sendTransform(tf::StampedTransform(tform, now, frame_id, base_link_name));
+    } else {
+      // if we're not broadcasting directly, STILL send a tf but use a different name and re-order it so that
+      // there is a single unambiguous transform root
+      tform.inverse();
+      tform_broadcaster.sendTransform(tf::StampedTransform(tform, now, base_link_name, tf_frame_name));
     }
 
     // update housekeeping data
@@ -193,7 +231,9 @@ class DsNavStatePublisher : public ModelPlugin {
   tf::TransformBroadcaster tform_broadcaster;
 
   bool enable_tf_broadcast;
+  bool enable_navstate_broadcast;
   std::string frame_id;
+  std::string tf_frame_name;
   std::string base_link_name;
 };
 

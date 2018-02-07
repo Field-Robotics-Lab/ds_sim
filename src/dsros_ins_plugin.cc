@@ -44,6 +44,7 @@ void dsrosRosInsSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
     node = new ros::NodeHandle(this->robot_namespace);
 
     ins_publisher = node->advertise<ds_sensor_msgs::Ins>(ins_topic_name, 1);
+    gyro_publisher = node->advertise<ds_sensor_msgs::Gyro>(gyro_topic_name, 1);
     att_publisher = node->advertise<geometry_msgs::QuaternionStamped>(att_topic_name, 1);
     connection = gazebo::event::Events::ConnectWorldUpdateBegin(
                 boost::bind(&dsrosRosInsSensor::UpdateChild, this, _1));
@@ -58,7 +59,7 @@ void dsrosRosInsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         return;
     }
 
-    if(ins_publisher.getNumSubscribers() > 0
+    if(ins_publisher.getNumSubscribers() > 0 || gyro_publisher.getNumSubscribers() > 0
                 || att_publisher.getNumSubscribers() > 0) {
 
         // update our raw data
@@ -94,50 +95,70 @@ void dsrosRosInsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         latitude += GaussianKernel(0, noiseLat);
     }
 
+    if(ins_publisher.getNumSubscribers() > 0 || gyro_publisher.getNumSubscribers() > 0) {
+
+      // prepare message header
+      ins_msg.header.frame_id = frame_name;
+      ins_msg.header.stamp.sec = data_time.sec;
+      ins_msg.header.stamp.nsec = data_time.nsec;
+      ins_msg.header.seq++;
+
+      ins_msg.ds_header.io_time.sec = data_time.sec;
+      ins_msg.ds_header.io_time.nsec = data_time.nsec;
+
+      ins_msg.orientation.x = orientation.X();
+      ins_msg.orientation.y = orientation.Y();
+      ins_msg.orientation.z = orientation.Z();
+      ins_msg.orientation.w = orientation.W();
+
+      ins_msg.linear_velocity.x = linear_velocity.X();
+      ins_msg.linear_velocity.y = linear_velocity.Y();
+      ins_msg.linear_velocity.z = linear_velocity.Z();
+
+      ins_msg.angular_velocity.x = angular_velocity.X();
+      ins_msg.angular_velocity.y = angular_velocity.Y();
+      ins_msg.angular_velocity.z = angular_velocity.Z();
+
+      ins_msg.linear_acceleration.x = linear_accel.X();
+      ins_msg.linear_acceleration.y = linear_accel.Y();
+      ins_msg.linear_acceleration.z = linear_accel.Z();
+
+      // use a local-level frame to get rotations correct
+      ignition::math::Quaterniond ll_rot = orientation;
+      ins_msg.roll = orientation.Roll() * 180.0 / M_PI;
+      ins_msg.pitch = -orientation.Pitch() * 180.0 / M_PI;
+      ins_msg.heading = 90 - orientation.Yaw() * 180.0 / M_PI;
+      if (ins_msg.heading > 360.0) {
+        ins_msg.heading -= 360.0;
+      } else if (ins_msg.heading < 0.0) {
+        ins_msg.heading += 360.0;
+      }
+    }
+
     if(ins_publisher.getNumSubscribers() > 0) {
-
-        // prepare message header
-        ins_msg.header.frame_id = frame_name;
-        ins_msg.header.stamp.sec = data_time.sec;
-        ins_msg.header.stamp.nsec = data_time.nsec;
-        ins_msg.header.seq++;
-
-        ins_msg.ds_header.io_time.sec = data_time.sec;
-        ins_msg.ds_header.io_time.nsec = data_time.nsec;
-
-        ins_msg.orientation.x = orientation.X();
-        ins_msg.orientation.y = orientation.Y();
-        ins_msg.orientation.z = orientation.Z();
-        ins_msg.orientation.w = orientation.W();
-
-        ins_msg.linear_velocity.x = linear_velocity.X();
-        ins_msg.linear_velocity.y = linear_velocity.Y();
-        ins_msg.linear_velocity.z = linear_velocity.Z();
-
-        ins_msg.angular_velocity.x = angular_velocity.X();
-        ins_msg.angular_velocity.y = angular_velocity.Y();
-        ins_msg.angular_velocity.z = angular_velocity.Z();
-
-        ins_msg.linear_acceleration.x = linear_accel.X();
-        ins_msg.linear_acceleration.y = linear_accel.Y();
-        ins_msg.linear_acceleration.z = linear_accel.Z();
-
-        // use a local-level frame to get rotations correct
-        ignition::math::Quaterniond ll_rot = orientation;
-        ins_msg.roll = orientation.Roll()*180.0/M_PI;
-        ins_msg.pitch = -orientation.Pitch()*180.0/M_PI;
-        ins_msg.heading = 90-orientation.Yaw()*180.0/M_PI;
-        if (ins_msg.heading > 360.0) {
-            ins_msg.heading -= 360.0;
-        } else if (ins_msg.heading < 0.0) {
-            ins_msg.heading += 360.0;
-        }
 
         ins_msg.latitude = latitude;
 
         // publish data
         ins_publisher.publish(ins_msg);
         ros::spinOnce();
+    }
+
+    if (gyro_publisher.getNumSubscribers() > 0) {
+      gyro_msg.header = ins_msg.header;
+      gyro_msg.ds_header = ins_msg.ds_header;
+
+      gyro_msg.heading = ins_msg.heading;
+      gyro_msg.pitch = ins_msg.pitch;
+      gyro_msg.roll = ins_msg.roll;
+
+      gyro_msg.heading_covar = noiseY;
+      gyro_msg.pitch_covar = noisePR;
+      gyro_msg.roll_covar = noisePR;
+
+      gyro_msg.orientation = ins_msg.orientation;
+
+      gyro_publisher.publish(gyro_msg);
     }
 
     if (att_publisher.getNumSubscribers() > 0) {
@@ -200,6 +221,17 @@ bool dsrosRosInsSensor::LoadParameters() {
   {
     ins_topic_name = "/ins";
     ROS_WARN_STREAM("missing <insTopicName>, set to /namespace/default: " << ins_topic_name);
+  }
+
+  if (sdf->HasElement("gyroTopicName"))
+  {
+    gyro_topic_name =  sdf->Get<std::string>("gyroTopicName");
+    ROS_INFO_STREAM("<gyroTopicName> set to: "<<gyro_topic_name);
+  }
+  else
+  {
+    gyro_topic_name = "/gyro";
+    ROS_WARN_STREAM("missing <gyroTopicName>, set to /namespace/default: " << gyro_topic_name);
   }
 
   if (sdf->HasElement("attTopicName"))
