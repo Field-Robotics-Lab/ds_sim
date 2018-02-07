@@ -4,7 +4,11 @@
     <gui>
       <camera name="user_camera">
         <!--<pose>4.71756 7.71791 -5.35534 0 0.544 -2.224</pose>-->
-        <pose>11 -12 -1. 0 0.25 1.9</pose>
+        <!-- for surface starts -->
+        <!-- <pose>11 -12 -1. 0 0.25 1.9</pose> -->
+
+        <!-- for submerged starts -->
+       <pose>3.1189 -56.3927 -47.135 0 .8629 1.638337</pose>
       </camera>
     </gui>
 
@@ -35,7 +39,7 @@
           <geometry>
             <plane>
               <normal>0 0 1</normal>
-              <size>200 200</size>
+              <size>1000 1000</size>
             </plane>
           </geometry>
           <surface>

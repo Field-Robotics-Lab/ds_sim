@@ -187,16 +187,16 @@ void DsrosDvlSensor::Load(const std::string &_worldName) {
     ignition::math::Pose3d beamPose;
     
     // RDI has this really silly beam arrangement
-    beamPose.Set(0,0,0, 0, M_PI-M_PI/180.0*(this->beamAngle),  M_PI/2.0);
+    beamPose.Set(0,0,0, 0, M_PI-M_PI/180.0*(this->beamAngle),  M_PI);
     beams.push_back(DsrosDvlBeam(physicsEngine, this, 1, this->pose, beamPose));
 
-    beamPose.Set(0,0,0, 0, M_PI-M_PI/180.0*(this->beamAngle), -M_PI/2.0);
+    beamPose.Set(0,0,0, 0, M_PI-M_PI/180.0*(this->beamAngle), 0);
     beams.push_back(DsrosDvlBeam(physicsEngine, this, 2, this->pose, beamPose));
 
-    beamPose.Set(0,0,0, 0, M_PI-M_PI/180.0*(this->beamAngle), 0);
+    beamPose.Set(0,0,0, 0, M_PI-M_PI/180.0*(this->beamAngle), M_PI/2.0);
     beams.push_back(DsrosDvlBeam(physicsEngine, this, 3, this->pose, beamPose));
 
-    beamPose.Set(0,0,0, 0, M_PI-M_PI/180.0*(this->beamAngle), M_PI);
+    beamPose.Set(0,0,0, 0, M_PI-M_PI/180.0*(this->beamAngle), -M_PI/2.0);
     beams.push_back(DsrosDvlBeam(physicsEngine, this, 4, this->pose, beamPose));
 }
 

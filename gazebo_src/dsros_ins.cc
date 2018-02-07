@@ -85,6 +85,7 @@ bool DsrosInsSensor::UpdateImpl(const bool _force) {
     ignition::math::Pose3d insPose = this->pose + parentLinkPose;
 
     // angular velocity
+    // TODO This doesn't do what we want it to
     ignition::math::Vector3<double> angular_velocity
          = insPose.Rot().Inverse().RotateVector(this->parentLink->GetWorldAngularVel().Ign());
 

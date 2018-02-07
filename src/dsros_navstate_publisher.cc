@@ -130,7 +130,7 @@ class DsNavStatePublisher : public ModelPlugin {
     state_msg.roll.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
     state_msg.roll.value = vehPose.rot.GetRoll();
     state_msg.pitch.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
-    state_msg.pitch.value = vehPose.rot.GetPitch();
+    state_msg.pitch.value = -vehPose.rot.GetPitch();
     state_msg.heading.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
     state_msg.heading.value = M_PI/2 - vehPose.rot.GetYaw();
 
