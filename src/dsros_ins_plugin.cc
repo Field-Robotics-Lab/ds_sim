@@ -125,13 +125,13 @@ void dsrosRosInsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
 
       // use a local-level frame to get rotations correct
       ignition::math::Quaterniond ll_rot = orientation;
-      ins_msg.roll = orientation.Roll() * 180.0 / M_PI;
-      ins_msg.pitch = -orientation.Pitch() * 180.0 / M_PI;
-      ins_msg.heading = 90 - orientation.Yaw() * 180.0 / M_PI;
-      if (ins_msg.heading > 360.0) {
-        ins_msg.heading -= 360.0;
+      ins_msg.roll = orientation.Roll();
+      ins_msg.pitch = -orientation.Pitch();
+      ins_msg.heading = M_PI/2 - orientation.Yaw();
+      if (ins_msg.heading > 2*M_PI) {
+        ins_msg.heading -= (2*M_PI);
       } else if (ins_msg.heading < 0.0) {
-        ins_msg.heading += 360.0;
+        ins_msg.heading += (2*M_PI);
       }
     }
 
