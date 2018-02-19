@@ -194,7 +194,10 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
 	    rng.ranges[j].range.point.x = beam.X();
 	    rng.ranges[j].range.point.y = beam.Y();
 	    rng.ranges[j].range.point.z = beam.Z();
-	    rng.ranges[j].range_validity = ds_sensor_msgs::Range3D::RANGE_VALID;
+	    if (sensor->BeamValid(j))
+	      rng.ranges[j].range_validity = ds_sensor_msgs::Range3D::RANGE_VALID;
+	    else
+	      rng.ranges[j].range_validity = ds_sensor_msgs::Range3D::RANGE_INDETERMINANT;
 	    rng.ranges[j].range.header.frame_id = frame_name;
 	    rng.ranges[j].range.header.stamp.sec = current_time.sec;
 	    rng.ranges[j].range.header.stamp.nsec = current_time.nsec;
