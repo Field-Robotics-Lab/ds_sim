@@ -45,6 +45,7 @@ void dsrosRosDvlSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
     node = new ros::NodeHandle(this->robot_namespace);
 
     dvl_data_publisher = node->advertise<ds_sensor_msgs::Dvl>(topic_name, 1);
+    rng_publisher = node->advertise<ds_sensor_msgs::Ranges3D>(ranges_topic_name, 1);
     pt_data_publisher  = node->advertise<sensor_msgs::PointCloud>(topic_name + "_cloud", 1);
     connection = gazebo::event::Events::ConnectWorldUpdateBegin(
                 boost::bind(&dsrosRosDvlSensor::UpdateChild, this, _1));
@@ -173,6 +174,36 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         ros::spinOnce();
     }
 
+    if (rng_publisher.getNumSubscribers() > 0) {
+        // prepare message header
+        rng.header.frame_id = frame_name;
+        rng.header.stamp.sec = current_time.sec;
+        rng.header.stamp.nsec = current_time.nsec;
+        rng.header.seq++;
+
+        // fill in some points
+        size_t NUM_PTS_PER_BEAM = 1000;
+        rng.ranges.resize(sensor->NumBeams());
+        for (size_t j=0; j<sensor->NumBeams(); j++) {
+            ignition::math::Pose3d beamPose = sensor->GetBeamPose(j);
+	    ignition::math::Vector3d vec;
+	    vec.X() = 0;
+	    vec.Y() = 0;
+	    vec.Z() = ranges[j];
+	    ignition::math::Vector3d beam = beamPose.Rot().RotateVector(vec) + beamPose.Pos();
+	    rng.ranges[j].range.point.x = beam.X();
+	    rng.ranges[j].range.point.y = beam.Y();
+	    rng.ranges[j].range.point.z = beam.Z();
+	    rng.ranges[j].range_validity = ds_sensor_msgs::Range3D::RANGE_VALID;
+	    rng.ranges[j].range.header.frame_id = frame_name;
+	    rng.ranges[j].range.header.stamp.sec = current_time.sec;
+	    rng.ranges[j].range.header.stamp.nsec = current_time.nsec;
+        }
+        // publish data
+        rng_publisher.publish(rng);
+        ros::spinOnce();
+    }
+
 
     last_time = current_time;
 }
@@ -219,6 +250,18 @@ bool dsrosRosDvlSensor::LoadParameters() {
   {
     topic_name = "/dvl";
     ROS_WARN_STREAM("missing <topicName>, set to /namespace/default: " << topic_name);
+  }
+
+  //RANGES TOPIC
+  if (sdf->HasElement("rangesTopicName"))
+  {
+    ranges_topic_name =  sdf->Get<std::string>("rangesTopicName");
+    ROS_INFO_STREAM("<rangesTopicName> set to: "<<ranges_topic_name);
+  }
+  else
+  {
+    ranges_topic_name = "/ranges";
+    ROS_WARN_STREAM("missing <rangesTopicName>, set to /namespace/default: " << ranges_topic_name);
   }
 
   //BODY NAME

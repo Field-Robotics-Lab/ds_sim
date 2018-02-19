@@ -15,6 +15,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud.h>
 #include <ds_sensor_msgs/Dvl.h>
+#include <ds_sensor_msgs/Ranges3D.h>
 #include <string>
 
 #include "../gazebo_src/dsros_dvl.hh"
@@ -52,9 +53,11 @@ private:
   ros::Publisher dvl_data_publisher;
 
   ds_sensor_msgs::Dvl msg;
+  ds_sensor_msgs::Ranges3D rng;
 
   // temporary stuff to make sure we're point our beams correctly
   ros::Publisher pt_data_publisher;
+  ros::Publisher rng_publisher;
   std::string pointcloud_frame;
   sensor_msgs::PointCloud pt_msg;
 
@@ -72,6 +75,7 @@ private:
 
   std::string robot_namespace;
   std::string topic_name;
+  std::string ranges_topic_name;
   std::string frame_name;
 
   unsigned int seed;
