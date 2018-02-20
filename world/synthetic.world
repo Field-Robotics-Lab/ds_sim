@@ -1,0 +1,143 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <world name="default">
+    <gui>
+      <camera name="user_camera">
+        <!--<pose>4.71756 7.71791 -5.35534 0 0.544 -2.224</pose>-->
+        <!-- for surface starts -->
+        <!-- <pose>11 -12 -1. 0 0.25 1.9</pose> -->
+
+        <!-- for submerged starts -->
+       <pose>3.1189 -56.3927 -47.135 0 .8629 1.638337</pose>
+      </camera>
+    </gui>
+
+    <scene>
+      <ambient> 0.35 0.35 0.35 1.0</ambient>
+      <shadows>1</shadows>
+    </scene>
+
+    <physics name="sentry_50Hz" default="true" type="ode">
+      <max_step_size>0.02</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>50</real_time_update_rate>
+    </physics>
+
+    <!-- Origin near Woods Hole -->
+    <spherical_coordinates>
+      <latitude_deg>41.5000000</latitude_deg>
+      <longitude_deg>-70.55</longitude_deg>
+    </spherical_coordinates>
+
+    <light type="directional" name="sun1">
+      <pose>50 0 150 0 0 0</pose>
+      <diffuse>1 1 1 1</diffuse>
+      <specular>.1 .1 .1 1</specular>
+      <direction>0.3 0.3 -1</direction>
+      <cast_shadows>true</cast_shadows>
+    </light>
+
+    <!--
+    <model name="heightmap">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+              <heightmap>
+                <uri>file://resources/synthetic_terrain.tif</uri>
+                <size>1280 1280 100</size>
+                <pos>0 0 -250</pos>
+              </heightmap>
+          </geometry>
+          <surface>
+            <contact>
+              <collide_bitmask>0xffff</collide_bitmask>
+            </contact>
+            <friction>
+              <ode>
+                <mu>100</mu>
+                <mu2>50</mu2>
+              </ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="visual">
+          <cast_shadows>false</cast_shadows>
+          <geometry>
+            <heightmap>
+              <uri>file://resources/synthetic_terrain.tif</uri>
+              <size>1280 1280 100</size>
+              <pos>0 0 -250</pos>
+            </heightmap>
+          </geometry>
+          <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/Grey</name>
+            </script>
+          </material>
+        </visual>
+      </link>
+    </model>
+    -->
+    <model name="terrain">
+      <static>true</static>
+      <pose>0 0 -150 0 0 0</pose>
+      <self_collide>false</self_collide>
+      <link name="terrain_link">
+        <visual name="terrain_visual">
+            <geometry>
+              <mesh>
+                <uri>file://resources/synthetic_terrain.dae</uri>
+                <scale>2560 2560 400</scale>
+              </mesh>
+            </geometry>
+        </visual>
+        <collision name="collision">
+          <geometry>
+            <mesh>
+              <uri>file://resources/synthetic_terrain.dae</uri>
+              <scale>2560 2560 400</scale>
+            </mesh>
+          </geometry>
+          <surface>
+            <contact>
+              <collide_bitmask>0xffff</collide_bitmask>
+            </contact>
+          </surface>
+        </collision>
+      </link>
+    </model>
+    <model name="ceiling_plane">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>2560 2560 .1</size>
+            </box>
+          </geometry>
+          <contact>
+            <collide_without_contact>1</collide_without_contact>
+          </contact>
+        </collision>
+        <visual name="visual">
+          <cast_shadows>false</cast_shadows>
+          <transparency>0.5</transparency>
+          <geometry>
+            <box>
+              <size>2560 2560 .1</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/BlueTransparent</name>
+            </script>
+          </material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-<xacro:macro name="rdi_workhorse_300_sim" params="name parent_link xyz rpy robot_namespace dvl_topic">
+<xacro:macro name="rdi_workhorse_300_sim" params="name parent_link xyz rpy robot_namespace dvl_topic ranges_topic">
   <gazebo reference="${name}_link">
     <material>Gazebo/Green</material>
   </gazebo>
@@ -23,6 +23,7 @@
       <plugin name="${name}_sensor_controller" filename="libdsros_ros_dvl.so">
         <robotNamespace>${robot_namespace}</robotNamespace>
         <topicName>${dvl_topic}</topicName>
+        <rangesTopicName>${ranges_topic}</rangesTopicName>
         <frameName>${name}_link</frameName>
         <pointcloudFrame>${parent_link}</pointcloudFrame>
         <updateRateHZ>2.0</updateRateHZ>
