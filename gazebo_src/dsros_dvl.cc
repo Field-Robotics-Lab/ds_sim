@@ -123,7 +123,8 @@ void DsrosDvlBeam::Update(const physics::WorldPtr& world,
 
         //gzdbg <<"intersection: " <<intersection.X() <<","  <<intersection.Y() <<","  <<intersection.Z() <<"\n";
         ignition::math::Vector3d inst_rel_vel = inst2world.Rot().RotateVectorReverse(sensorVel - entityVel);
-        //gzmsg <<"\tinst_relative vel: " <<inst_rel_vel.X() <<","  <<inst_rel_vel.Y() <<","  <<inst_rel_vel.Z() <<"\n";
+        //gzdbg <<"\tinst_relative vel: " <<inst_rel_vel.X() <<","  <<inst_rel_vel.Y() <<","  <<inst_rel_vel.Z() <<"\n";
+        //gzmsg <<"\tunit vector: " <<beamUnitVector.X() <<"," <<beamUnitVector.Y() <<"," <<beamUnitVector.Z() <<"\n";
         beamVelocity = beamUnitVector.Dot(inst_rel_vel);
     } else {
         gzdbg <<"NULL contact entity!";
@@ -345,12 +346,12 @@ bool DsrosDvlSensor::UpdateImpl(const bool _force) {
         linear_velocity.Y( inst_vel(1) );
         linear_velocity.Z( inst_vel(2) );
 
-        //ignition::math::Vector3d stefVel = sensorPose.Rot().RotateVector(linear_velocity);
-        //ignition::math::Vector3d bodyVel = vehPose.Rot().RotateVectorReverse(bodyLinearVel);
+        ignition::math::Vector3d stefVel = sensorPose.Rot().RotateVector(linear_velocity);
+        ignition::math::Vector3d bodyVel = vehPose.Rot().RotateVectorReverse(bodyLinearVel);
 
         //gzdbg <<" comp. vel: (" <<inst_vel(0) <<"," <<inst_vel(1) <<"," <<inst_vel(2) <<")\n"
-              //<<" orig. vel: (" <<bodyVel.X() <<"," <<bodyVel.Y() <<"," <<bodyVel.Z() <<")\n"
-              //<<" stef. vel: (" <<stefVel.X() <<"," <<stefVel.Y() <<"," <<stefVel.Z() <<")\n";
+        //      <<" orig. vel: (" <<bodyVel.X() <<"," <<bodyVel.Y() <<"," <<bodyVel.Z() <<")\n"
+        //      <<" stef. vel: (" <<stefVel.X() <<"," <<stefVel.Y() <<"," <<stefVel.Z() <<")\n";
     }
 
     // fill in the message
