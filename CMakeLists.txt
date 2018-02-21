@@ -7,12 +7,12 @@ find_package(catkin REQUIRED COMPONENTS
   ds_core_msgs
   ds_actuator_msgs
   ds_sensor_msgs
-        ds_nav_msgs
+  ds_nav_msgs
   roscpp
   sensor_msgs
-        geometry_msgs
+  geometry_msgs
   gazebo_ros
-        tf
+  tf
 )
 
 find_package(gazebo REQUIRED)
