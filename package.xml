@@ -17,7 +17,7 @@
   <author email="jhowland@whoi.edu">Jon Howland</author>
 
   <buildtool_depend>catkin</buildtool_depend>
-  <buildtool_depend>protobuf</buildtool_depend>
+  <buildtool_depend>protobuf-dev</buildtool_depend>
   <build_depend>gazebo_ros</build_depend>
   <build_depend>xacro</build_depend>
   <build_depend>roscpp</build_depend>
@@ -25,6 +25,8 @@
   <build_depend>geometry_msgs</build_depend>
   <build_depend>eigen</build_depend>
   <build_depend>tf</build_depend>
+  <build_depend>protobuf-dev</build_depend>
+  <build_depend>protobuf</build_depend>
   <build_export_depend>gazebo_ros</build_export_depend>
   <build_export_depend>xacro</build_export_depend>
   <build_export_depend>sensor_msgs</build_export_depend>
@@ -32,6 +34,7 @@
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>eigen</build_export_depend>
   <build_export_depend>tf</build_export_depend>
+  <build_export_depend>protobuf</build_export_depend>
   <exec_depend>gazebo_ros</exec_depend>
   <exec_depend>xacro</exec_depend>
   <exec_depend>sensor_msgs</exec_depend>
@@ -39,6 +42,7 @@
   <exec_depend>roscpp</exec_depend>
   <exec_depend>joy</exec_depend>
   <exec_depend>tf</exec_depend>
+  <exec_depend>protobuf</exec_depend>
 
   <build_depend>ds_actuator_msgs</build_depend>
   <build_depend>ds_core_msgs</build_depend>
