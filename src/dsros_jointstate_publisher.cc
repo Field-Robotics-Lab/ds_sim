@@ -59,6 +59,14 @@ class DsJointStatePublisher : public ModelPlugin {
             }
         }
 
+        // check to see if we're disabled by a rosparam
+        disable = false;
+        if (_sdf->HasElement("disableParam")) {
+            std::string disableParam = _sdf->Get<std::string>("disableParam");
+            disable = ros::param::param<bool>(disableParam, false);
+        }
+
+
         // prepare some reference times
         double updateRate = 10;
         if (_sdf->HasElement("updateRate")) {
@@ -69,16 +77,23 @@ class DsJointStatePublisher : public ModelPlugin {
 
         // Setup our publisher
         ROS_INFO_STREAM("ds_jointstatepublisher: Advertising topic to publish on...");
-        rosPub = rosNode->advertise<sensor_msgs::JointState>("joint_states", 10);
-        // Listen to the update event
-        this->updateConnection = event::Events::ConnectWorldUpdateBegin(
-            boost::bind(&DsJointStatePublisher::OnUpdate, this, _1));
+        if (!disable) {
+            rosPub = rosNode->advertise<sensor_msgs::JointState>("joint_states", 10);
+            // Listen to the update event
+            this->updateConnection = event::Events::ConnectWorldUpdateBegin(
+                boost::bind(&DsJointStatePublisher::OnUpdate, this, _1));
+        }
     }
 
     void OnUpdate(const common::UpdateInfo& _info) {
         if (_info.simTime < lastRosPublished + rosPublishPeriod) {
             return;
         }
+        if (disable) {
+            lastRosPublished += rosPublishPeriod;
+            return;
+        }
+
         sensor_msgs::JointState jointState;
         jointState.header.stamp = ros::Time::now();
         jointState.name.resize(this->model->GetJointCount());
@@ -114,6 +129,7 @@ class DsJointStatePublisher : public ModelPlugin {
     std::string robotNamespace;
     physics::ModelPtr model;
     double sign;
+    bool disable;
 
     gazebo::common::Time rosPublishPeriod, lastRosPublished;
 
