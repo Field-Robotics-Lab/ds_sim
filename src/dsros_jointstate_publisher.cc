@@ -63,7 +63,19 @@ class DsJointStatePublisher : public ModelPlugin {
         disable = false;
         if (_sdf->HasElement("disableParam")) {
             std::string disableParam = _sdf->Get<std::string>("disableParam");
-            disable = ros::param::param<bool>(disableParam, false);
+
+            if (rosNode->hasParam(disableParam) &&
+               rosNode->getParam(disableParam, disable)) {
+               ROS_INFO_STREAM("Loaded sim_jointstate_pub::disable=" <<disable);
+            } else {
+               ROS_ERROR_STREAM("Unable to load sim_jointstate_pub::disable from " 
+                               <<rosNode->resolveName(disableParam));
+               disable = false;
+            }
+
+            if (disable) {
+                ROS_ERROR_STREAM("jointstate publisher disabling itself!");
+            }
         }
 
 
