@@ -65,6 +65,9 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
     Eigen::VectorXd beam_vel(4);
     Eigen::MatrixXd beam_unit(4,3);
     Eigen::Vector3d velocity;
+    double speed = 0;
+    double course = 0;
+    double altitude = 0;
     int fillIn = 0;
     for (size_t i=0; i<sensor->NumBeams(); i++) {
 
@@ -75,6 +78,7 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
             beam_unit(fillIn, 0) = beamUnit.X();
             beam_unit(fillIn, 1) = beamUnit.Y();
             beam_unit(fillIn, 2) = beamUnit.Z();
+            altitude += ranges[i];
             fillIn++;
         } else {
             ranges[i] = std::numeric_limits<double>::quiet_NaN();
@@ -87,6 +91,15 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
 
         // solve a least-squares problem to get velocity based on the noisy ranges
         velocity = beam_unit.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beam_vel);
+
+        altitude /= static_cast<float>(fillIn);
+        altitude *= cos(M_PI/6); // convert range to altitude
+
+        speed = sqrt(velocity(0)*velocity(0) + velocity(1)*velocity(1));
+        course = atan2(velocity(0), velocity(1)) * 180.0/M_PI;
+        if (course < 0) {
+            course += 360.0;
+        }
     }
 
 
@@ -120,6 +133,9 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
 
         msg.num_good_beams = sensor->ValidBeams();
         msg.speed_sound = 1500.0;
+        msg.course_gnd = course;
+        msg.speed_gnd = speed;
+        msg.altitude = altitude;
 
         for (size_t i=0; i<sensor->NumBeams(); i++) {
             msg.range[i] = ranges[i];
