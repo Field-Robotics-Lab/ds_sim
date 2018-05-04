@@ -82,6 +82,9 @@ void dsrosRosDepthSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         msg.depth = fofonoff_depth(msg.pressure, msg.latitude);
         msg.pressure_covar = gaussian_noise * gaussian_noise;
 
+	// Simulator should really run the median filter too
+	msg.median_depth_filter_ok = true;
+	
         // publish data
         depth_data_publisher.publish(msg);
         ros::spinOnce();
