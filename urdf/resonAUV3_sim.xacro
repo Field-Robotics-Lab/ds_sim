@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:macro name="resonAUV3_sim" params="name parent_link xyz rpy robot_namespace topic">
+
+  <gazebo reference="${name}_link">
+    <material>Gazebo/Black</material>
+  </gazebo>
+
+  <!-- Gazebo plugin to actually take measurements! -->
+    <gazebo reference="${parent_link}">
+        <sensor name="${name}_sensor" type="ray">
+            <always_on>1</always_on>
+            <pose frame="">${xyz} ${rpy}</pose>
+            <visualize>true</visualize>
+            <update_rate>2</update_rate>
+            <ray>
+                <!-- These are our beams.  They're limited equi-angular, but the distinction probably
+                     doesn't matter -->
+                <scan>
+                    <horizontal>
+                        <samples>512</samples>
+                        <resolution>0.25</resolution>
+                        <min_angle>-1.0471976</min_angle>
+                        <max_angle>1.0471976</max_angle>
+                    </horizontal>
+                </scan>
+                <range>
+                    <min>1.0</min>
+                    <max>300</max>
+                    <resolution>0.25</resolution>
+                </range>
+            </ray>
+
+
+      <!--
+      <plugin name="${name}_sensor_controller" filename="libdsros_ros_gps.so">
+        <robotNamespace>${robot_namespace}</robotNamespace>
+        <topicName>${topic}</topicName>
+        <frameName>world</frameName>
+        <updateRateHZ>1.0</updateRateHZ>
+        <minAltitude>0.01</minAltitude>
+        <gaussianNoiseLL_meters>1.0</gaussianNoiseLL_meters>
+        <gaussianNoiseAlt_meters>2.0</gaussianNoiseAlt_meters>
+      </plugin>
+      -->
+    </sensor>
+  </gazebo>
+</xacro:macro>
+
+</robot>

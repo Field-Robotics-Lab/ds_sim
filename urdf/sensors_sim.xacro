@@ -6,6 +6,7 @@
 <xacro:include filename="$(find ds_sim)/urdf/rdi300_sim.xacro"/>
 <xacro:include filename="$(find ds_sim)/urdf/xeos_gps_sim.xacro"/>
 <xacro:include filename="$(find ds_sim)/urdf/avtrak_sim.xacro"/>
+<xacro:include filename="$(find ds_sim)/urdf/resonAUV3_sim.xacro"/>
 
 </robot>
 
