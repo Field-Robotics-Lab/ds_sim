@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   ds_actuator_msgs
   ds_sensor_msgs
   ds_nav_msgs
+  ds_multibeam_msgs
   roscpp
   sensor_msgs
   geometry_msgs
@@ -90,11 +91,15 @@ add_library(dsros_ros_gps src/dsros_gps_plugin.cc src/dsros_gps_plugin.hh)
 target_link_libraries(dsros_ros_gps ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(dsros_ros_gps ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+# Reson plugin
+add_library(dsros_ros_reson src/dsros_reson_plugin.cc src/dsros_reson_plugin.hh)
+target_link_libraries(dsros_ros_reson ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_ros_reson ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 catkin_package(
   INCLUDE_DIRS include
   #LIBRARIES ds_sim_gazebo_msgs  dsros_jointstate_publisher dsros_sensors dsros_ros_depth dsros_ros_ins dsros_ros_dvl dsros_ros_gps
-  CATKIN_DEPENDS xacro roscpp gazebo_ros sensor_msgs ds_core_msgs ds_sensor_msgs ds_actuator_msgs
+  CATKIN_DEPENDS xacro roscpp gazebo_ros sensor_msgs ds_core_msgs ds_sensor_msgs ds_actuator_msgs ds_multibeam_msgs
   DEPENDS
 )
 

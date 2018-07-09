@@ -1,32 +1,27 @@
 
-// lots of this implementation blatently stolen from:
-// https://github.com/ros-simulation/gazebo_ros_pkgs/blob/kinetic-devel/gazebo_plugins/src/gazebo_ros_imu_sensor.cpp
-#include "dsros_depth_plugin.hh"
-#include "../gazebo_src/depth_util.cc" // yes, really include the .cpp
+
+#include "dsros_reson_plugin.hh"
+
 
 using namespace gazebo;
 
-GZ_REGISTER_SENSOR_PLUGIN(dsrosRosDepthSensor);
+GZ_REGISTER_SENSOR_PLUGIN(dsrosRosResonSensor);
 
-dsrosRosDepthSensor::dsrosRosDepthSensor() : SensorPlugin() {
-    depth = 0;
-    pressure = 0;
-    latitude = 0;
-
+dsrosRosResonSensor::dsrosRosResonSensor() : SensorPlugin() {
     sensor = NULL;
     seed = 0;
 };
 
-dsrosRosDepthSensor::~dsrosRosDepthSensor() {
+dsrosRosResonSensor::~dsrosRosResonSensor() {
     if (connection.get()) {
         connection.reset();
     }
     node->shutdown();
 }
 
-void dsrosRosDepthSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
+void dsrosRosResonSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
     sdf = sdf_;
-    sensor = std::dynamic_pointer_cast<gazebo::sensors::DsrosDepthSensor>(sensor_);
+    sensor = std::dynamic_pointer_cast<gazebo::sensors::RaySensor>(sensor_);
     if (sensor == NULL) {
         ROS_FATAL("Error! Unable to convert sensor pointer!");
         return;
@@ -45,13 +40,16 @@ void dsrosRosDepthSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_)
 
     node = new ros::NodeHandle(this->robot_namespace);
 
-    depth_data_publisher = node->advertise<ds_sensor_msgs::DepthPressure>(topic_name, 1);
+    // TODO: Add publishers for pointcloud
+    reson_data_publisher = node->advertise<ds_multibeam_msgs::MultibeamRaw>(topic_name + "/raw_multibeam", 5);
+
+    // connect our UpdateChild function to get called whenever there's a world update event
     connection = gazebo::event::Events::ConnectWorldUpdateBegin(
-                boost::bind(&dsrosRosDepthSensor::UpdateChild, this, _1));
+                boost::bind(&dsrosRosResonSensor::UpdateChild, this, _1));
     last_time = sensor->LastUpdateTime();
 }
 
-void dsrosRosDepthSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
+void dsrosRosResonSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
 
     common::Time current_time = sensor->LastUpdateTime();
 
@@ -59,41 +57,26 @@ void dsrosRosDepthSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         return;
     }
 
-    if(depth_data_publisher.getNumSubscribers() > 0) {
+    // TODO: Remove this
+    // Quick demo to make sure we're actually getting real ranges.
+    int centerbeam_idx = sensor->RangeCount() / 2;
+    std::cout <<"Center beam: " <<sensor->Range(centerbeam_idx) <<std::endl;
 
-        pressure = sensor->GetPressure();
-        latitude = sensor->GetLatitude();
+    if(reson_data_publisher.getNumSubscribers() > 0) {
 
-        // prepare message header
-        msg.header.frame_id = frame_name;
-        msg.header.stamp.sec = current_time.sec;
-        msg.header.stamp.nsec = current_time.nsec;
-        msg.header.seq++;
+        // TODO: Fill in mb_msg
 
-        msg.ds_header.io_time.sec = current_time.sec;
-        msg.ds_header.io_time.nsec = current_time.nsec;
-
-        msg.pressure = pressure + GaussianKernel(0, gaussian_noise);
-        msg.pressure_raw_unit = ds_sensor_msgs::DepthPressure::UNIT_PRESSURE_DBAR;
-
-        msg.tare = 10.1325; // 1 atm
-        msg.pressure_raw = msg.pressure + msg.tare;
-        msg.latitude = latitude;
-        msg.depth = fofonoff_depth(msg.pressure, msg.latitude);
-        msg.pressure_covar = gaussian_noise * gaussian_noise;
-
-	// Simulator should really run the median filter too
-	msg.median_depth_filter_ok = true;
-	
         // publish data
-        depth_data_publisher.publish(msg);
+        reson_data_publisher.publish(mb_msg);
         ros::spinOnce();
     }
+
+    // TODO: Add a publisher for the pointcloud data
 
     last_time = current_time;
 }
 
-double dsrosRosDepthSensor::GaussianKernel(double mu, double sigma) {
+double dsrosRosResonSensor::GaussianKernel(double mu, double sigma) {
   // generation of two normalized uniform random variables
   double U1 = static_cast<double>(rand_r(&seed)) / static_cast<double>(RAND_MAX);
   double U2 = static_cast<double>(rand_r(&seed)) / static_cast<double>(RAND_MAX);
@@ -106,7 +89,7 @@ double dsrosRosDepthSensor::GaussianKernel(double mu, double sigma) {
   return Z0;
 }
 
-bool dsrosRosDepthSensor::LoadParameters() {
+bool dsrosRosResonSensor::LoadParameters() {
 
 //loading parameters from the sdf file
 
@@ -133,7 +116,7 @@ bool dsrosRosDepthSensor::LoadParameters() {
   }
   else
   {
-    topic_name = "/reson";
+    topic_name = "/depth";
     ROS_WARN_STREAM("missing <topicName>, set to /namespace/default: " << topic_name);
   }
 
