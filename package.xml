@@ -1,20 +1,20 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>ds_sim</name>
-  <version>0.0.0</version>
+  <version>0.1.0</version>
   <description>General plugins, urdf, etc for simulating vehicles with the DSL package.  Intended to focus on common sensors, actuators, etc.</description>
 
-  <maintainer email="ivaughn@whoi.edu">Ian Vaughn</maintainer>
+  <maintainer email="nobody@nowhere.com">NONE</maintainer>
 
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>TODO</license>
+  <license>BSD</license>
 
   <url type="repository">https://bitbucket.org/whoidsl/ds_sim</url> -->
 
   <author email="ivaughn@whoi.edu">Ian Vaughn</author>
   <author email="ssuman@whoi.edu">Stefano Suman</author>
-  <author email="zberkowitz@whoi.edu">Zac Berkowitzh</author>
-  <author email="jvaccaro@whoi.edu">Jennifer Vaccaro</author>
+  <author email="zberkowitz@whoi.edu">Zac Berkowitz</author>
+  <author email="jvaccaro@whoi.edu">J Vaccaro</author>
   <author email="jhowland@whoi.edu">Jon Howland</author>
 
   <buildtool_depend>catkin</buildtool_depend>
