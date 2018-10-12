@@ -3,6 +3,8 @@ project(ds_sim)
 
 add_compile_options(-std=c++11)
 
+list(INSERT CMAKE_MODULE_PATH 0 ${PROJECT_SOURCE_DIR}/cmake)
+
 find_package(catkin REQUIRED COMPONENTS
   ds_core_msgs
   ds_actuator_msgs
@@ -15,6 +17,21 @@ find_package(catkin REQUIRED COMPONENTS
   gazebo_ros
   tf
 )
+
+find_package(ClangFormat)
+if(CLANG_FORMAT_FOUND)
+    add_custom_target(clang-format-ds-sim
+            COMMENT
+            "Run clang-format on all project C++ sources"
+            WORKING_DIRECTORY
+            ${PROJECT_SOURCE_DIR}
+            COMMAND
+            find src
+            include/ds_sim
+            -iname '*.h' -o -iname '*.cpp'
+            | xargs ${CLANG_FORMAT_EXECUTABLE} -i
+            )
+endif(CLANG_FORMAT_FOUND)
 
 find_package(gazebo REQUIRED)
 find_package(cmake_modules REQUIRED)
@@ -113,5 +130,3 @@ include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
 )
-
-
