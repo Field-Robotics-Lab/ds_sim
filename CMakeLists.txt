@@ -110,8 +110,18 @@ add_dependencies(dsros_ros_gps ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPO
 
 # Reson plugin
 add_library(dsros_ros_reson src/dsros_reson_plugin.cc src/dsros_reson_plugin.hh)
-target_link_libraries(dsros_ros_reson ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+target_link_libraries(dsros_ros_reson ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(dsros_ros_reson ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+# Drag / buoyancy plugin
+add_library(dsros_hydro gazebo_src/dsros_hydro.cc gazebo_src/dsros_hydro.hh)
+target_link_libraries(dsros_hydro ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_hydro ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+# Generic thruster plugin
+add_library(dsros_ros_thruster gazebo_src/dsros_thruster.cc gazebo_src/dsros_thruster.hh)
+target_link_libraries(dsros_ros_thruster ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_ros_thruster ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 catkin_package(
   INCLUDE_DIRS include

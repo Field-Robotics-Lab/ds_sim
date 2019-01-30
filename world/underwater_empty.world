@@ -33,7 +33,7 @@
 
     <model name="ground_plane">
       <static>true</static>
-      <pose>0 0 -200 0 0 0</pose>
+      <pose>0 0 -1200 0 0 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry>
@@ -43,9 +43,6 @@
             </plane>
           </geometry>
           <surface>
-            <contact>
-              <collide_bitmask>0xffff</collide_bitmask>
-            </contact>
             <friction>
               <ode>
                 <mu>100</mu>
@@ -81,9 +78,6 @@
               <size>200 200 .1</size>
             </box>
           </geometry>
-          <contact>
-            <collide_without_contact>1</collide_without_contact>
-          </contact>
         </collision>
         <visual name="visual">
           <cast_shadows>false</cast_shadows>
