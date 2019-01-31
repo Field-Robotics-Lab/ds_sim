@@ -61,10 +61,12 @@ void DsrosThruster::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
 DsrosThrusterModel DsrosThruster::LoadModel(sdf::ElementPtr sdf) {
   GZ_ASSERT(sdf->HasElement("gain"), "Thruster model MUST have a gain");
   GZ_ASSERT(sdf->HasElement("offset"), "Thruster model MUST have an offset");
+  GZ_ASSERT(sdf->HasElement("max_cmd"), "Thruster model MUST have a maximum command");
 
   DsrosThrusterModel ret;
   ret.gain = sdf->Get<double>("gain");
   ret.offset = sdf->Get<double>("offset");
+  ret.max_cmd = sdf->Get<double>("max_cmd");
 
   GZ_ASSERT(sdf->HasElement("speed_gain") == sdf->HasElement("speed_offset"),
       "Thrust model should either have speed_gain AND speed_offset or neither");
@@ -128,9 +130,9 @@ void DsrosThruster::OnUpdate(const common::UpdateInfo& _info) {
   double thrust_val = 0;
   if (command >= 0) {
     // this function will automatically clamp to 0 if the thrust is invalid
-    thrust_val = forward.calc_thrust(command, thrust_val);
+    thrust_val = forward.calc_thrust(fabs(command), fabs(apparant_velocity));
   } else {
-    thrust_val = -reverse.calc_thrust(command, thrust_val);
+    thrust_val = -reverse.calc_thrust(fabs(command), fabs(apparant_velocity));
   }
 
   // actually apply the force

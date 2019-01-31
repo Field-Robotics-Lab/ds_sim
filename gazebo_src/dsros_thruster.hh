@@ -21,6 +21,9 @@ struct DsrosThrusterModel {
   }
 
   inline double calc_thrust(double cmd, double speed) {
+    if (cmd > max_cmd) {
+      cmd = max_cmd;
+    }
     double value = gain*cmd + offset
         + speed_gain*cmd*speed + speed_offset*speed;
     if (value <= 0) {
@@ -29,6 +32,7 @@ struct DsrosThrusterModel {
     return value;
   }
 
+  double max_cmd;
   double gain;
   double offset;
   double speed_gain;

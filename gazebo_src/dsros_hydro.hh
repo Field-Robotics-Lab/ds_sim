@@ -44,6 +44,7 @@ class DsrosHydro : public ModelPlugin {
 
   math::Vector3 buoy_center_com; // center-of-mass relative
   math::Vector3 buoy_force_world;
+  double buoy_min_depth;
 
   math::Vector3 grav_center_body;
   math::Vector3 grav_force_world;

@@ -28,6 +28,12 @@ void DsrosHydro::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
   GZ_ASSERT(buoy->HasElement("center"), "Buoyancy tag MUST specify a center tag");
   buoy_center_com = loadVector(buoy->GetElement("center")) - body_link->GetInertial()->GetCoG();
 
+  if (buoy->HasElement("min_depth")) {
+    buoy_min_depth = buoy->Get<double>("min_depth");
+  } else {
+    buoy_min_depth = 0.0;
+  }
+
   // Get the center-of-buoyancy
   grav_center_body = body_link->GetInertial()->GetCoG();
 
@@ -145,7 +151,12 @@ void DsrosHydro::OnUpdate(const common::UpdateInfo& _info) {
 
   // Apply buoyancy.  Note that this is relative to the CENTER OF MASS, not the link
   // origin.  I share your dream of Gazebo someday documenting their coordinate frames
-  body_link->AddForceAtRelativePosition(buoy_force_world, buoy_center_com);
+  double depth = -(body_link->GetWorldPose().pos.z);
+  if (depth <= buoy_min_depth) {
+    body_link->AddForceAtRelativePosition(-grav_force_world, buoy_center_com);
+  } else {
+    body_link->AddForceAtRelativePosition(buoy_force_world, buoy_center_com);
+  }
 
   // Add linear drag
   math::Vector3 vel_lin = body_link->GetRelativeLinearVel();
