@@ -54,18 +54,25 @@ class DsrosThruster : public ModelPlugin {
   ignition::math::Pose3d pose;
   ignition::math::Vector3d thrust_unit_vec;
   std::string thruster_link;
+  std::string thruster_name;
 
   gazebo::physics::LinkPtr body_link;
   gazebo::event::ConnectionPtr updateConnection;
 
   common::Time command_timeout;
   double command;
+  bool vehicle_in_loop;
+  bool enabled;
   DsrosThrusterModel forward;
   DsrosThrusterModel reverse;
 
   std::unique_ptr<ros::NodeHandle> node_handle;
   ros::Publisher viz_pub;
   ros::Subscriber cmd_sub;
+  ros::Publisher state_pub;
+
+  common::Time last_published_msg; // when last published
+  common::Time publish_period; // how often to publish
 
 
 
