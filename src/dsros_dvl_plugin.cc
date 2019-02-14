@@ -199,6 +199,7 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         pt_msg.points.resize(NUM_PTS_PER_BEAM*sensor->NumBeams()); // use 100 pts
         size_t fillIn = 0;
         for (size_t j=0; j<sensor->NumBeams(); j++) {
+
             ignition::math::Pose3d beamPose = sensor->GetBeamPose(j);
             for (size_t i=0; i<NUM_PTS_PER_BEAM; i++) {
                 ignition::math::Vector3d vec;

@@ -30,65 +30,46 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-<xacro:macro name="rdi_workhorse_300_sim" params="name parent_link xyz rpy robot_namespace dvl_topic ranges_topic">
+<xacro:macro name="nortek1000_sim" params="name parent_link xyz rpy robot_namespace dvl_topic ranges_topic">
   <gazebo reference="${name}_link">
     <material>Gazebo/Green</material>
   </gazebo>
   <gazebo reference="${parent_link}">
     <sensor name="${name}_sensor" type="dsros_dvl">
       <always_on>1</always_on>
-      <update_rate>2.0</update_rate>
+      <update_rate>5.0</update_rate>
       <pose frame="">${xyz} ${rpy}</pose>
 
       <!-- This plugin MUST be included, because SDF sucks -->
       <plugin name="${name}_sensor_controller" filename="libdsros_ros_dvl.so">
-        <!--  300kHz DVL -->
-        <minRange>1.0</minRange>
-        <maxRange>200</maxRange>
-        <maxRangeDiff>10</maxRangeDiff>
-        <beamAngleDeg>30.0</beamAngleDeg>
-        <beamWidthDeg>4.0</beamWidthDeg>
-        <beamAzimuthDeg1>180</beamAzimuthDeg1>
-        <beamAzimuthDeg2>0</beamAzimuthDeg2>
-        <beamAzimuthDeg3>90</beamAzimuthDeg3>
-        <beamAzimuthDeg4>-90</beamAzimuthDeg4>
-        <pos_z_down>false</pos_z_down>
-        <collide_bitmask>0x0001</collide_bitmask>
-
         <robotNamespace>${robot_namespace}</robotNamespace>
         <topicName>${dvl_topic}</topicName>
         <rangesTopicName>${ranges_topic}</rangesTopicName>
         <frameName>${name}_link</frameName>
         <pointcloudFrame>${parent_link}</pointcloudFrame>
-        <updateRateHZ>2.0</updateRateHZ>
+        <updateRateHZ>5.0</updateRateHZ>
         <!--
         <gaussianNoiseBeamVel>0.01</gaussianNoiseBeamVel>
         <gaussianNoiseBeamRange>0.1</gaussianNoiseBeamRange>
         -->
         <gaussianNoiseBeamVel>0.00</gaussianNoiseBeamVel>
         <gaussianNoiseBeamRange>0.0</gaussianNoiseBeamRange>
+
+        <!--  1000MHz DVL -->
+        <minRange>0.22</minRange>
+        <maxRange>55.16</maxRange>
+        <maxRangeDiff>10</maxRangeDiff>
+        <beamAngleDeg>25.0</beamAngleDeg>
+        <beamWidthDeg>4.0</beamWidthDeg>
+        <beamAzimuthDeg1>-135</beamAzimuthDeg1>
+        <beamAzimuthDeg2>135</beamAzimuthDeg2>
+        <beamAzimuthDeg3>45</beamAzimuthDeg3>
+        <beamAzimuthDeg4>-45</beamAzimuthDeg4>
+        <pos_z_down>true</pos_z_down>
+        <collide_bitmask>0x0001</collide_bitmask>
       </plugin>
     </sensor>
   </gazebo>
-
-        <!--  600kHz DVL -->
-        <!--
-        <minRange>0.7</minRange>
-        <maxRange>90</maxRange>
-        <maxRangeDiff>10</maxRangeDiff>
-        <beamAngleDeg>30.0</beamAngleDeg>
-        <beamWidthDeg>2.0</beamWidthDeg>
-        -->
-
-        <!-- 1200kHz DVL -->
-        <!--
-        <minRange>0.5</minRange>
-        <maxRange>45</maxRange>
-        <maxRangeDiff>10</maxRangeDiff>
-        <beamAngleDeg>30.0</beamAngleDeg>
-        <beamWidthDeg>1.5</beamWidthDeg>
-        -->
-
 </xacro:macro>
 
 </robot>

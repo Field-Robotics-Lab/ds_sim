@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-Copyright 2018 Woods Hole Oceanographic Institution
+Copyright 2019 Woods Hole Oceanographic Institution
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,18 +30,33 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-<xacro:include filename="$(find ds_sim)/urdf/phins_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/paro_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/rdi300_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/nortek1000_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/xeos_gps_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/avtrak_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/resonAUV3_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/norbitWBMS_bathy_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/norbitWBMS_3D_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/basic_camera_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/dspl_seasphere_sim.xacro"/>
+<xacro:macro name="dspl_seasphere_sim" params="name parent_link xyz rpy">
 
+  <gazebo reference="${name}_link">
+      <material>Gazebo/Red</material>
+  </gazebo>
 
+  <gazebo>
+    <plugin name="${name}_light_plugin" filename="libdsros_spotlight.so">
+        <pose>${xyz} ${rpy}</pose>
+        <light type="spot" name="${name}_light">
+            <diffuse>1 1 1 1</diffuse>
+            <specular>0.1 0.1 0.1 1.0</specular>
+            <attenuation>
+                <range>20</range>
+                <linear>0.2</linear>
+                <constant>0.8</constant>
+                <quadratic>0.01</quadratic>
+            </attenuation>
+            <cast_shadows>true</cast_shadows>">
+            <direction>1 0 0</direction>
+            <spot>
+                <inner_angle>${pi/180*75}</inner_angle>
+                <outer_angle>${pi/180*115}</outer_angle>
+                <falloff>1.0</falloff>
+            </spot>
+        </light>
+    </plugin>
+  </gazebo>
+</xacro:macro>
 </robot>
-

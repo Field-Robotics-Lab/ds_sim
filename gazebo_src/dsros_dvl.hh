@@ -145,6 +145,13 @@ namespace sensors {
         double beamWidth;
         double beamAngle;
 
+        // Azimuth of each beam in DVL coordinates
+        double beamAzimuth1;
+        double beamAzimuth2;
+        double beamAzimuth3;
+        double beamAzimuth4;
+        bool pos_z_down;
+
         std::vector<DsrosDvlBeam> beams;
 
         // Collision physics stuff

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!--
-Copyright 2018 Woods Hole Oceanographic Institution
+Copyright 2019 Woods Hole Oceanographic Institution
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -30,18 +30,42 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-<xacro:include filename="$(find ds_sim)/urdf/phins_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/paro_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/rdi300_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/nortek1000_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/xeos_gps_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/avtrak_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/resonAUV3_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/norbitWBMS_bathy_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/norbitWBMS_3D_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/basic_camera_sim.xacro"/>
-<xacro:include filename="$(find ds_sim)/urdf/dspl_seasphere_sim.xacro"/>
+<xacro:macro name="norbitWBMS_bathy_sim" params="name parent_link xyz rpy topic">
 
+  <gazebo reference="${name}_link">
+    <material>Gazebo/Black</material>
+  </gazebo>
+
+  <!-- Gazebo plugin to actually take measurements! -->
+    <gazebo reference="${parent_link}">
+        <sensor name="${name}_sensor" type="ray">
+            <always_on>1</always_on>
+            <pose frame="">${xyz} ${rpy}</pose>
+            <visualize>true</visualize>
+            <update_rate>5</update_rate>
+            <ray>
+                <!-- These are our beams.  They're limited equi-angular, but the distinction probably
+                     doesn't matter -->
+                <scan>
+                    <horizontal>
+                        <samples>512</samples>
+                        <resolution>0.40</resolution>
+                        <min_angle>-${pi/180*100}</min_angle>
+                        <max_angle>${pi/180*100}</max_angle>
+                    </horizontal>
+                </scan>
+                <range>
+                    <min>0.2</min>
+                    <max>275</max>
+                    <resolution>0.01</resolution>
+                </range>
+            </ray>
+            <plugin name="${name}_sensor_controller" filename="libgazebo_ros_laser.so">
+                <topicName>${topic}</topicName>
+                <frameName>${name}_link</frameName>
+            </plugin>
+    </sensor>
+  </gazebo>
+</xacro:macro>
 
 </robot>
-

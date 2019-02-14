@@ -123,6 +123,10 @@ add_library(dsros_ros_thruster gazebo_src/dsros_thruster.cc gazebo_src/dsros_thr
 target_link_libraries(dsros_ros_thruster ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(dsros_ros_thruster ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
+add_library(dsros_spotlight gazebo_src/dsros_spotlight.cc gazebo_src/dsros_spotlight.h)
+target_link_libraries(dsros_spotlight ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_spotlight ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 catkin_package(
   INCLUDE_DIRS include
   #LIBRARIES ds_sim_gazebo_msgs  dsros_jointstate_publisher dsros_sensors dsros_ros_depth dsros_ros_ins dsros_ros_dvl dsros_ros_gps
