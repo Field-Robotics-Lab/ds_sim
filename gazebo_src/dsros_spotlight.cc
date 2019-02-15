@@ -15,23 +15,32 @@ dsrosSpotlight::dsrosSpotlight() {
 void dsrosSpotlight::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
   body_link = _parent->GetLink();
 
-  // Create a light
-  rendering::ScenePtr scene = rendering::get_scene();
-  if (!scene) {
-    gzwarn <<"No scene, so not adding light!" <<std::endl;
-    return;
-  }
-  light.reset(new rendering::Light(scene));
-  // Read the light's config from the SDF
-  light->Load(_sdf->GetElement("light"));
-
-  // add the light to the world
-  //scene->AddLight(light);
+  light_name = _sdf->Get<std::string>("light_name");
 
   // Read the light's body-frame pose
   pose = _sdf->Get<ignition::math::Pose3d>("pose");
 
-  // set an initial position
+  bool hide_in_client = false;
+  if (_sdf->HasElement("hide_in_client")) {
+    hide_in_client = _sdf->Get<bool>("hide_in_client");
+  }
+
+  // prepare our publisher
+  this->node = transport::NodePtr(new transport::Node());
+  this->node->Init();
+  this->requestPub = this->node->Advertise<msgs::Light>("~/light/modify");
+
+  if (hide_in_client) {
+    // turn off the visual
+    gazebo::transport::PublisherPtr visual_pub = this->node->Advertise<msgs::Visual>("~/visual");
+    msgs::Visual visual_msg;
+    visual_msg.set_name(light_name);
+    visual_msg.set_parent_name("");
+    visual_msg.set_visible(false);
+
+    visual_pub->Publish(visual_msg);
+  }
+
   updateLightPosition();
 
   // wire some updates
@@ -43,6 +52,23 @@ void dsrosSpotlight::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
 void dsrosSpotlight::updateLightPosition() {
   ignition::math::Pose3d body_pose = body_link->GetWorldPose().Ign();
   ignition::math::Pose3d final_pose = pose + body_pose;
-  light->SetPosition(final_pose.Pos());
-  light->SetRotation(final_pose.Rot());
+  //light->SetPosition(final_pose.Pos());
+  //light->SetRotation(final_pose.Rot());
+
+  if (light) {
+    light->SetWorldPose(final_pose);
+  }
+  /*
+  gzdbg <<"\n\n";
+  gzdbg <<"World Pose: " <<body_pose <<"\n";
+  gzdbg <<"      Pose: " <<pose <<"\n";
+  gzdbg <<"Final Pose: " <<final_pose <<"\n\n" <<std::endl;
+  */
+
+  msgs::Light msg;
+  msg.set_name(light_name);
+  msgs::Set(msg.mutable_pose(), final_pose);
+
+  requestPub->Publish(msg);
+
 }

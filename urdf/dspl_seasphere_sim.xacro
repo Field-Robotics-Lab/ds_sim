@@ -39,6 +39,9 @@ POSSIBILITY OF SUCH DAMAGE.
   <gazebo>
     <plugin name="${name}_light_plugin" filename="libdsros_spotlight.so">
         <pose>${xyz} ${rpy}</pose>
+        <light_name>${name}_light</light_name>
+        <hide_in_client>false</hide_in_client>
+        <!-- Someday, this will work.  For now, SDF breaks it HARD
         <light type="spot" name="${name}_light">
             <diffuse>1 1 1 1</diffuse>
             <specular>0.1 0.1 0.1 1.0</specular>
@@ -56,6 +59,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 <falloff>1.0</falloff>
             </spot>
         </light>
+        -->
     </plugin>
   </gazebo>
 </xacro:macro>
