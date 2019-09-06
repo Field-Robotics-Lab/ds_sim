@@ -43,6 +43,12 @@
                 <scale>1.0 1.0 1.0</scale>
               </mesh>
             </geometry>
+          <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/DarkGrey</name>
+            </script>
+          </material>
         </visual>
         <collision name="collision">
           <geometry>
