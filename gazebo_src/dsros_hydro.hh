@@ -51,10 +51,14 @@ class DsrosHydro : public ModelPlugin {
 
   math::Vector3 drag_center_body; // center-of-mass relative
   Matrix6d drag_lin_coeff;
+
+  // quadratic drag is a 6 x 6 x 6 tensor; see the modelling thing.
   Matrix6d drag_quad_coeff;
+  std::array<Matrix6d, 6> drag_quad_coeff2;
 
   math::Vector3 loadVector(sdf::ElementPtr sdf);
   Matrix6d loadMatrix(sdf::ElementPtr sdf);
+  std::array<Matrix6d, 6> loadTensor(sdf::ElementPtr sdf);
 };
 }
 #endif //PROJECT_DSROS_HYDRO_HH

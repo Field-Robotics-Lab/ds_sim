@@ -60,6 +60,7 @@ void DsrosHydro::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
   // function we use to apply the relative force is relative to the link origin.
   // Unlike ALL THE OTHER apply force functions.  Gazebo never met a coordinate system
   // it could get documented.
+  //gzmsg <<" Loading center-of-drag...\n";
   if (!drag->HasElement("center")) {
     gzwarn <<"ds_hydro plugin for link " <<body_link->GetName()
            <<" does not specify a center of hydrodynamic force; assuming Center of Mass" <<std::endl;
@@ -68,6 +69,7 @@ void DsrosHydro::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
     drag_center_body = loadVector(drag->GetElement("center"));
   }
 
+  //gzmsg <<" Loading linear drag...\n";
   if (drag->HasElement("linear")) {
     drag_lin_coeff = loadMatrix(drag->GetElement("linear"));
   } else {
@@ -75,15 +77,24 @@ void DsrosHydro::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
            <<" does not specify linear drag matrix! (MAY CAUSE INSTABILITY!)" <<std::endl;
   }
 
+  //gzmsg <<"Loading quadratic drag...\n";
   if (drag->HasElement("quadratic")) {
-    drag_lin_coeff = loadMatrix(drag->GetElement("quadratic"));
+    drag_quad_coeff = loadMatrix(drag->GetElement("quadratic"));
   } else {
     gzwarn <<"ds_hydro plugin for link " <<body_link->GetName()
            <<" does not specify quadratic drag matrix!" <<std::endl;
   }
 
+  //gzmsg <<"Loading quadratic2 drag...\n";
+  if (drag->HasElement("quadratic2")) {
+    drag_quad_coeff2 = loadTensor(drag->GetElement("quadratic2"));
+  } else {
+    gzwarn <<"ds_hydro plugin for link " <<body_link->GetName()
+           <<" does not specify quadratic drag matrix!" <<std::endl;
+  }
   // /////////////////////////////////////////////////////////////////////// //
   // Connect the update handler
+  //gzmsg <<"Updating connection handler for dsros_hydro plugin!\n";
   this->updateConnection = event::Events::ConnectWorldUpdateBegin(
       boost::bind(&DsrosHydro::OnUpdate, this, _1));
 
@@ -144,6 +155,50 @@ Matrix6d DsrosHydro::loadMatrix(sdf::ElementPtr sdf) {
   return ret;
 }
 
+std::array<Matrix6d, 6> DsrosHydro::loadTensor(sdf::ElementPtr sdf) {
+  std::array<Matrix6d, 6> ret;
+  for (size_t i=0; i<6; i++) {
+    ret[i].m11 = math::Matrix3::ZERO;
+    ret[i].m12 = math::Matrix3::ZERO;
+    ret[i].m21 = math::Matrix3::ZERO;
+    ret[i].m22 = math::Matrix3::ZERO;
+  }
+
+  std::vector<std::string> axis_tags = {"x", "y", "z", "r", "p", "h"};
+
+  for (size_t i=0; i<6; i++) { // j,k read BOTH linear & angular components; i must go through all 6
+    for (size_t j = 0; j < 3; j++) {
+      for (size_t k = 0; k < 3; k++) {
+
+        // Ok, so the individual matrices are storing j,k
+        // Each matrix is a slice by i, so the at we can write to a single
+        // output axis as a matrix quadratic product
+
+        // the top-left segment
+        std::string tag11 = axis_tags[i] + axis_tags[j] + axis_tags[k];
+        std::string tag12 = axis_tags[i] + axis_tags[j] + axis_tags[k + 3];
+        std::string tag21 = axis_tags[i] + axis_tags[j + 3] + axis_tags[k];
+        std::string tag22 = axis_tags[i] + axis_tags[j + 3] + axis_tags[k + 3];
+
+        if (sdf->HasElement(tag11)) {
+          ret[i].m11[j][k] = sdf->Get<double>(tag11);
+        }
+        if (sdf->HasElement(tag12)) {
+          ret[i].m12[j][k] = sdf->Get<double>(tag12);
+        }
+        if (sdf->HasElement(tag21)) {
+          ret[i].m21[j][k] = sdf->Get<double>(tag21);
+        }
+        if (sdf->HasElement(tag22)) {
+          ret[i].m22[j][k] = sdf->Get<double>(tag22);
+        }
+      }
+    }
+  }
+
+  return ret;
+}
+
 void DsrosHydro::OnUpdate(const common::UpdateInfo& _info) {
 
   // Apply gravity
@@ -175,8 +230,46 @@ void DsrosHydro::OnUpdate(const common::UpdateInfo& _info) {
   math::Vector3 drag_quad_force = drag_quad_coeff.m11 * vel_lin2 + drag_quad_coeff.m12 * vel_ang2;
   math::Vector3 drag_quad_torque = drag_quad_coeff.m21 * vel_lin2 + drag_quad_coeff.m22 * vel_ang2;
 
-  body_link->AddLinkForce(-drag_quad_force, drag_center_body);
-  body_link->AddRelativeTorque(-drag_quad_torque);
+  // quadratic drag is much harder
+  math::Vector3 absvel_lin = vel_lin.GetAbs();
+  math::Vector3 absvel_ang = vel_ang.GetAbs();
+
+  // this matrix library is officially the WORST
+  std::array<double, 3> tmp_quad_force;
+  std::array<double, 3> tmp_quad_torque;
+  for (size_t i=0; i<3; i++) {
+
+    // ok, so we WANT to compute |v|^T * C * v
+    // But there's no way to do matrix products from the left in either gazebo math or
+    // ignition, and they're not using Eigen because we just have to have a broken linear algebra library.
+    // Instead do |v| dot (C*v).  Which is at least the same math.
+
+    // its even messier because we split linear and angular values using hte whole m11-m22 nonsense.
+
+    // linear components: i=0-2
+    tmp_quad_force[i] = absvel_lin.Dot(drag_quad_coeff2[i].m11*vel_lin)
+        + absvel_ang.Dot(drag_quad_coeff2[i].m21 * vel_lin)
+        + absvel_lin.Dot(drag_quad_coeff2[i].m12 * vel_ang)
+        + absvel_ang.Dot(drag_quad_coeff2[i].m22 * vel_ang);
+
+    // angular components: i=3-5
+    tmp_quad_torque[i] = absvel_lin.Dot(drag_quad_coeff2[i+3].m11*vel_lin)
+        + absvel_ang.Dot(drag_quad_coeff2[i+3].m21 * vel_lin)
+        + absvel_lin.Dot(drag_quad_coeff2[i+3].m12 * vel_ang)
+        + absvel_ang.Dot(drag_quad_coeff2[i+3].m22 * vel_ang);
+  }
+  math::Vector3 drag_quad_force2(tmp_quad_force[0], tmp_quad_force[1], tmp_quad_force[2]);
+  math::Vector3 drag_quad_torque2(tmp_quad_torque[0], tmp_quad_torque[1], tmp_quad_torque[2]);
+
+  std::cout <<"RUNNING DSROS_HYDRO!" <<std::endl;
+  gzmsg <<"\n";
+  gzmsg <<"Drag1  : " <<drag_quad_force <<"\n";
+  gzmsg <<"Drag2  : " <<drag_quad_force2 <<"\n";
+  gzmsg <<"Torque1: " <<drag_quad_torque <<"\n";
+  gzmsg <<"Torque2: " <<drag_quad_torque2 <<"\n";
+
+  body_link->AddLinkForce(-drag_quad_force2, drag_center_body);
+  body_link->AddRelativeTorque(-drag_quad_torque2);
 
   // Add a phantom "added mass" term
   // TODO
