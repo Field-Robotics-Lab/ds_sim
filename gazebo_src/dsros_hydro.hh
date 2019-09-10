@@ -53,8 +53,20 @@ class DsrosHydro : public ModelPlugin {
   Matrix6d drag_lin_coeff;
 
   // quadratic drag is a 6 x 6 x 6 tensor; see the modelling thing.
-  Matrix6d drag_quad_coeff;
-  std::array<Matrix6d, 6> drag_quad_coeff2;
+  std::array<Matrix6d, 6> drag_quad_coeff;
+
+  // Added mass coefficients.  Coriolis and Centripital matrices will be built on the fly
+  Matrix6d drag_added_mass_coeff;
+  // added mass has this known issue where because accelerations instantaneously increase,
+  // (because math sim), the acceleration at a given time step can cause thrashing when adding mass.
+  // The solution is to force acceleration to slowly ramp up.
+  // We ALSO have to compute our own relative accelerations, because gazebo ALSO screws that up.
+  double acc_alpha; // decay coefficient for filtering
+  math::Vector3 filt_acc_lin;
+  math::Vector3 filt_acc_ang;
+  math::Vector3 previous_relvel_lin;
+  math::Vector3 previous_relvel_ang;
+  common::Time previous_time;
 
   math::Vector3 loadVector(sdf::ElementPtr sdf);
   Matrix6d loadMatrix(sdf::ElementPtr sdf);

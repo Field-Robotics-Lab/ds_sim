@@ -141,19 +141,20 @@ an example that uses a decoupled model, i.e., it only specifies the diagonal ele
 
 ```xml
 <linear>
-    <xx>31.45669111875</xx>
-    <yy>64.51287500625</yy>
-    <zz>59.0117771375</zz>
-    <rr>31.45669111875</rr>
-    <pp>64.51287500625</pp>
-    <hh>17.70353314125</hh>
+    <xx>coeff_surge</xx>
+    <yy>coeff_sway</yy>
+    <zz>coeff_heave</zz>
+    <rr>coeff_roll</rr>
+    <pp>coeff_pitch</pp>
+    <hh>coeff_heading</hh>
 </linear>
 ```
 
 Another way to think about these tags is that the first character in the tag specifies the axis the 
 force is applied to, while the second character specifies the velocity causing that force.  So,
 `<xy>` gives the coefficient of force generated in the x-direction by velocity in the y-direction; 
-that is, Fx = Lxy * Vy.
+that is, Fx = Lxy * Vy.  Note that the density of water and all other constants must be included in the 
+provided coefficients.
 
 A decoupled model like that shown is typically sufficient.
 
@@ -182,15 +183,40 @@ being clustered on the diagonal.  For example:
 
 ```xml
 <quadratic>
-    <xxx>314.5669111875</xxx>
-    <yyy>645.1287500625</yyy>
-    <zzz>590.117771375</zzz>
-    <rrr>314.5669111875</rrr>
-    <ppp>645.1287500625</ppp>
-    <hhh>177.0353314125</hhh>
+    <xxx>coeff_surge</xxx>
+    <yyy>coeff_sway</yyy>
+    <zzz>coeff_heave</zzz>
+    <rrr>coeff_roll</rrr>
+    <ppp>coeff_pitch</ppp>
+    <hhh>coeff_heading</hhh>
 </quadratic>
 ```
 
 ### Added Mass
 
+Added mass is the result of hydrodynamic forces that act as if additional mass is imparted on the vehicle.
+It is related to the need to accelerate water as a submerged body accelerates, but in practice I find it
+more helpful to think of it as a term in the equation of motion that gets fit to real data.  Added mass
+is parameterized by a 6 x 6 added mass matrix.  Although positive semi-definite, Fossen notes that in 
+practice all 36 elements can be distinct.  As with many other such parameters, the simulator implements
+all 36 elements and assumes all unspecified elements are zero.  A Coriolis-Centripital matrix is 
+computed at each timestep using the derivation in Fossen's _Handbook of Marine Craft Hydrodynamics
+and Motion Control_, Page 120, Equations 6.43 - 6.46.  Also much like the other drag matrices, Fossen
+notes that fully-submerged marine vehicles with three axes of symmetry can typically ignore the 
+off-diagonal elements of the added mass matrix.  
 
+The added-mass matrix is specified much like the linear drag matrix.  The elements are:
+
+```xml
+<added_mass>
+    <xx>mass_kg</xx>
+    <yy>mass_kg</yy>
+    <zz>mass_kg</zz>
+    <rr>Ixx</rr>
+    <pp>Iyy</pp>
+    <hh>Izz</hh>
+</added_mass>
+```
+
+In the absence of data, a good rule of thumb is to use the vehicle's mass inertia matrix.  This effectively makes
+the added mass equal to the vehicle's actual mass.
