@@ -77,8 +77,14 @@ the buoyancy parameters are included in the plugin tag block.  For example:
         <!-- This is TOTAL system buoyancy -->
         <buoyancy>455.592</buoyancy>
 
-        <!-- Above this depth, we pin up-buoyancy to the gravity force -->
-        <min_depth>${8*in_to_m}</min_depth>
+        <!-- Above out_of_water, we assume no bouyancy -->
+        <out_of_water_depth>${0*in_to_m}</out_of_water_depth>
+
+        <!-- Below fully-submerged, we assume full buoyancy -->
+        <fully_submerged_depth>${8*in_to_m}</fully_submerged_depth>
+
+        <!-- In between, it's linear.  But its also helpful to apply a scale factor. -->
+        <scale_factor>1.0</scale_factor>
     </buoyancy>
 
     <drag>
@@ -87,7 +93,11 @@ the buoyancy parameters are included in the plugin tag block.  For example:
 </plugin>
 ```
 
-TODO: Discuss how buoyancy is modified near the surface to keep the vehicle submerged
+The surface interaction is extremely crude, and is intended mostly for completeness.  When deeper than the fully 
+submerged depth, full buoyancy is applied.  When shallower than the out-of-water-depth, no buoyancy is applied.
+In between, a portion of the full buoyancy, determined by the scale factor, is applied.  In general, the difference
+between out_of_water depth and fully_submerged_depth, and the scale factor, seem to have very little impact on settling
+time.
 
 ## Hydrodynamic Drag
 
@@ -96,7 +106,7 @@ all of that, and strives to simply implement the model that must otherwise be su
 
 The drag force is broken down into three components: a linear drag term, where force is proportional to 
 velocity, a quadratic drag term, where force is proportional to the square of velocity, and an added
-mass term, where hydrodynamic forces mimic inertial effects.  Linear and quatratic drag
+mass term, where hydrodynamic forces mimic inertial effects.  Linear and quadratic drag
  are applied at the specified center of drag, while added mass is applied at the center of mass.
 
 All the drag terms are included in a single "drag" tag in the plugin as follows:

@@ -28,10 +28,21 @@ void DsrosHydro::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
   GZ_ASSERT(buoy->HasElement("center"), "Buoyancy tag MUST specify a center tag");
   buoy_center_com = loadVector(buoy->GetElement("center")) - body_link->GetInertial()->GetCoG();
 
-  if (buoy->HasElement("min_depth")) {
-    buoy_min_depth = buoy->Get<double>("min_depth");
+  if (buoy->HasElement("scale_factor")) {
+    buoy_surface_scale = buoy->Get<double>("scale_factor");
   } else {
-    buoy_min_depth = 0.0;
+    buoy_surface_scale = 1.0;
+  }
+  if (buoy->HasElement("out_of_water_depth")) {
+    buoy_no_buoyancy_depth = buoy->Get<double>("out_of_water_depth");
+  } else {
+    buoy_no_buoyancy_depth = 0;
+  }
+
+  if (buoy->HasElement("fully_submerged_depth")) {
+    buoy_all_buoyancy_depth = buoy->Get<double>("fully_submerged_depth");
+  } else {
+    buoy_all_buoyancy_depth = 0;
   }
 
   // Get the center-of-buoyancy
@@ -39,6 +50,7 @@ void DsrosHydro::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
 
   gzmsg <<"   Buoy Center: " <<buoy_center_com <<std::endl;
   gzmsg <<"Center Of Mass: " <<grav_center_body <<std::endl;
+  gzmsg <<"Buoyancy scaling active betweeen: " <<buoy_no_buoyancy_depth <<" and " <<buoy_all_buoyancy_depth <<"\n";
 
   // Build the buoyancy vector
   GZ_ASSERT(buoy->HasElement("buoyancy"), "Buoyancy tag MUST specify a buoyancy tag");
@@ -244,10 +256,20 @@ void DsrosHydro::OnUpdate(const common::UpdateInfo& _info) {
   // Apply buoyancy.  Note that this is relative to the CENTER OF MASS, not the link
   // origin.  I share your dream of Gazebo someday documenting their coordinate frames
   double depth = -(body_link->GetWorldPose().pos.z);
-  if (depth <= buoy_min_depth) {
-    body_link->AddForceAtRelativePosition(-grav_force_world, buoy_center_com);
-  } else {
+
+  if (depth >= buoy_all_buoyancy_depth) {
+    // we're fully submerged
     body_link->AddForceAtRelativePosition(buoy_force_world, buoy_center_com);
+  } else if (depth <= buoy_no_buoyancy_depth) {
+    // we're fully out of the water, just let gravity do its thing.
+    // Even though its in free-fall in air, we'll still apply drag as if in water.
+    body_link->AddForceAtRelativePosition(math::Vector3::Zero, buoy_center_com);
+  } else {
+    // we're partially submerged; scale buoyancy linearly
+    double dynamic_buoyancy = (depth - buoy_no_buoyancy_depth)/(buoy_all_buoyancy_depth - buoy_no_buoyancy_depth);
+    // we only allow the scale_factor fraction fo bouyancy to change during surface interactions
+    double buoy_scale_factor = buoy_surface_scale * dynamic_buoyancy + (1.0-buoy_surface_scale);
+    body_link->AddForceAtRelativePosition(buoy_scale_factor*buoy_force_world, buoy_center_com);
   }
 
   // Add linear drag
@@ -336,9 +358,6 @@ void DsrosHydro::OnUpdate(const common::UpdateInfo& _info) {
   // add the inertial and coriolis/centripital term to get the final added mass contribution
   math::Vector3 added_mass_force = added_mass_inertia_force + added_mass_cor_force;
   math::Vector3 added_mass_torque = added_mass_inertia_torque + added_mass_cor_torque;
-
-  //gzmsg <<"Inertia f:" <<added_mass_inertia_force <<" T:" <<added_mass_inertia_torque;
-  //gzmsg <<" Coriolis f:" <<added_mass_cor_force <<" T:" <<added_mass_cor_torque <<"\n";
 
   // Forces are in the body frame, but applied to the CoM
   body_link->AddRelativeForce(-added_mass_force);

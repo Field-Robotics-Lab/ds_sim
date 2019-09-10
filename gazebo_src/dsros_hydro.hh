@@ -44,7 +44,9 @@ class DsrosHydro : public ModelPlugin {
 
   math::Vector3 buoy_center_com; // center-of-mass relative
   math::Vector3 buoy_force_world;
-  double buoy_min_depth;
+  double buoy_all_buoyancy_depth; // depth at which we start losing bouyancy
+  double buoy_no_buoyancy_depth; // depth at which the vehicle is fully out of the water
+  double buoy_surface_scale; // scale factor to reduce oscillation
 
   math::Vector3 grav_center_body;
   math::Vector3 grav_force_world;
