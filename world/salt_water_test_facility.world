@@ -31,18 +31,24 @@
       <cast_shadows>true</cast_shadows>
     </light>
 
-    <model name="terrain">
+    <model name="tank">
       <static>true</static>
       <pose>0 0 0 0 0 0</pose>
       <self_collide>false</self_collide>
-      <link name="terrain_link">
-        <visual name="terrain_visual">
+      <link name="tank_link">
+        <visual name="tank_visual">
             <geometry>
               <mesh>
                 <uri>file://resources/salt_water_test_facility_asbuilt_20190905_fixed.stl</uri>
                 <scale>1.0 1.0 1.0</scale>
               </mesh>
             </geometry>
+          <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/DarkGrey</name>
+            </script>
+          </material>
         </visual>
         <collision name="collision">
           <geometry>
@@ -59,7 +65,7 @@
         </collision>
       </link>
     </model>
-
+      <!--
     <model name="ceiling_plane">
       <static>true</static>
       <pose>0 0 0 0 0 0</pose>
@@ -90,5 +96,6 @@
         </visual>
       </link>
     </model>
+    -->
   </world>
 </sdf>

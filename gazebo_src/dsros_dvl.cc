@@ -98,7 +98,7 @@ DsrosDvlBeam::DsrosDvlBeam(const physics::PhysicsEnginePtr& physicsEngine,
 
     this->collision->GetSurface()->collideWithoutContact = true;
     this->collision->GetSurface()->collideWithoutContactBitmask = 1;
-    this->collision->SetCollideBits(~GZ_SENSOR_COLLIDE);
+    this->collision->SetCollideBits(GZ_SENSOR_COLLIDE);
     this->collision->SetCategoryBits(GZ_SENSOR_COLLIDE);
 
     // setup the contact subscription
@@ -187,12 +187,22 @@ void DsrosDvlSensor::Load(const std::string &_worldName) {
     }
 
     // Load the options
-    // this won't work until we fix the SDF schema issue, so for now hard-code
-    /*
-    sdf::ElementPtr dvlElem = this->sdf->GetElement("dvl");
+    sdf::ElementPtr dvlElem = this->sdf->GetFirstElement();
+
+    while (dvlElem) {
+      gzdbg <<dvlElem->GetName() <<"\n";
+
+      if (dvlElem->GetName() == "plugin"
+        && dvlElem->GetAttribute("filename")->GetAsString() == "libdsros_ros_dvl.so") {
+          break;
+
+      }
+      dvlElem = dvlElem->GetNextElement();
+    }
+
     if (!dvlElem) {
-        gzerr <<"DVL Sensor is missing <dvl> SDF element";
-        return;
+      gzerr <<"DVL sensor MUST have plugin with filename=libdsros_ros_dvl.so so we can get min/max range, etc\n";
+      throw std::runtime_error("DVL Sensor MUST specify a plugin with parameters");
     }
 
     this->rangeMin     = dvlElem->Get<double>("minRange");
@@ -200,12 +210,18 @@ void DsrosDvlSensor::Load(const std::string &_worldName) {
     this->rangeDiffMax = dvlElem->Get<double>("maxRangeDiff");
     this->beamAngle    = dvlElem->Get<double>("beamAngleDeg");
     this->beamWidth    = dvlElem->Get<double>("beamWidthDeg");
-    */
+    this->beamAzimuth1  = dvlElem->Get<double>("beamAzimuthDeg1");
+    this->beamAzimuth2  = dvlElem->Get<double>("beamAzimuthDeg2");
+    this->beamAzimuth3  = dvlElem->Get<double>("beamAzimuthDeg3");
+    this->beamAzimuth4  = dvlElem->Get<double>("beamAzimuthDeg4");
+    this->pos_z_down = dvlElem->Get<bool>("pos_z_down");
+    /*
     this->rangeMin = 1.0;
     this->rangeMax = 200;
     this->rangeDiffMax = 10;
     this->beamAngle = 30;
     this->beamWidth = 4.0;
+     */
 
     // setup to publish!
     this->topicName = this->GetTopic();
@@ -217,18 +233,25 @@ void DsrosDvlSensor::Load(const std::string &_worldName) {
 
     // rotate 
     ignition::math::Pose3d beamPose;
+
+    const double DTOR = M_PI/180.0;
+
+    double start = M_PI;
+    if (this->pos_z_down) {
+        start = 0;
+    }
     
     // RDI has this really silly beam arrangement
-    beamPose.Set(0,0,0, 0, M_PI-M_PI/180.0*(this->beamAngle),  M_PI);
+    beamPose.Set(0,0,0, 0, (start-DTOR*(this->beamAngle)), this->beamAzimuth1*DTOR);
     beams.push_back(DsrosDvlBeam(physicsEngine, this, 1, this->pose, beamPose));
 
-    beamPose.Set(0,0,0, 0, M_PI-M_PI/180.0*(this->beamAngle), 0);
+    beamPose.Set(0,0,0, 0, (start-DTOR*(this->beamAngle)), this->beamAzimuth2*DTOR);
     beams.push_back(DsrosDvlBeam(physicsEngine, this, 2, this->pose, beamPose));
 
-    beamPose.Set(0,0,0, 0, M_PI-M_PI/180.0*(this->beamAngle), M_PI/2.0);
+    beamPose.Set(0,0,0, 0, (start-DTOR*(this->beamAngle)), this->beamAzimuth3*DTOR);
     beams.push_back(DsrosDvlBeam(physicsEngine, this, 3, this->pose, beamPose));
 
-    beamPose.Set(0,0,0, 0, M_PI-M_PI/180.0*(this->beamAngle), -M_PI/2.0);
+    beamPose.Set(0,0,0, 0, (start-DTOR*(this->beamAngle)), this->beamAzimuth4*DTOR);
     beams.push_back(DsrosDvlBeam(physicsEngine, this, 4, this->pose, beamPose));
 }
 
