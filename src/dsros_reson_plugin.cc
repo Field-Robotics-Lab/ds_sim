@@ -89,7 +89,7 @@ void dsrosRosResonSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
     // TODO: Remove this
     // Quick demo to make sure we're actually getting real ranges.
     int centerbeam_idx = sensor->RangeCount() / 2;
-    std::cout <<"Center beam: " <<sensor->Range(centerbeam_idx) <<std::endl;
+    //std::cout <<"Center beam: " <<sensor->Range(centerbeam_idx) <<std::endl;
 
     if(reson_data_publisher.getNumSubscribers() > 0) {
 
