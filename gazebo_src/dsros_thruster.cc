@@ -12,6 +12,7 @@ DsrosThruster::DsrosThruster() {
   command = 0;
   vehicle_in_loop = false;
   enabled = true;
+  flippedAtDriver = false;
 }
 
 void DsrosThruster::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
@@ -47,6 +48,16 @@ void DsrosThruster::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
     return;
   }
   node_handle.reset(new ros::NodeHandle);
+
+  // check if this thruster is flipped in the driver
+  if (_sdf->HasElement("propdir")) {
+    int tmp=_sdf->Get<int>("propdir");
+    if (tmp > 0) {
+      flippedAtDriver = false;
+    } else {
+      flippedAtDriver = true;
+    }
+  }
 
   // Check if we're running a hardware-in-the-loop sim, or something else
   GZ_ASSERT(_sdf->HasElement("sim_param_namespace"), "Thruster must have a per-vehicle simulation parameter namespace");
@@ -91,6 +102,7 @@ DsrosThrusterModel DsrosThruster::LoadModel(sdf::ElementPtr sdf) {
   ret.offset = sdf->Get<double>("offset");
   ret.max_cmd = sdf->Get<double>("max_cmd");
 
+
   GZ_ASSERT(sdf->HasElement("speed_gain") == sdf->HasElement("speed_offset"),
       "Thrust model should either have speed_gain AND speed_offset or neither");
 
@@ -112,6 +124,7 @@ DsrosThrusterModel DsrosThruster::LoadModel(sdf::ElementPtr sdf) {
 
 void DsrosThruster::OnCmdUpdate(const ds_actuator_msgs::ThrusterCmd& cmd) {
   if (body_link) {
+    // flipping commands at the driver only affects reported outputs
     command = cmd.cmd_value;
     command_timeout = body_link->GetWorld()->GetSimTime() + common::Time(cmd.ttl_seconds);
   } else {
@@ -186,8 +199,13 @@ void DsrosThruster::OnUpdate(const common::UpdateInfo& _info) {
       state_msg.ds_header.io_time = state_msg.header.stamp;
       state_msg.enable = enabled;
       state_msg.thruster_name = thruster_name;
-      state_msg.cmd_value = command;
-      state_msg.actual_value = command;
+      if (flippedAtDriver) {
+        state_msg.cmd_value = -command;
+        state_msg.actual_value = -command;
+      } else {
+        state_msg.cmd_value = command;
+        state_msg.actual_value = command;
+      }
 
       state_pub.publish(state_msg);
     }

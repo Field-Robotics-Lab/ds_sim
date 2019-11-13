@@ -75,6 +75,8 @@ class DsrosThruster : public ModelPlugin {
   common::Time publish_period; // how often to publish
 
 
+  bool flippedAtDriver; // flip the sign of incoming/outgoing data, probably because it uses a different prop
+                        // or backwards wiring or whatever
 
   DsrosThrusterModel LoadModel(sdf::ElementPtr sdf);
 
