@@ -102,6 +102,12 @@ DsrosThrusterModel DsrosThruster::LoadModel(sdf::ElementPtr sdf) {
   ret.offset = sdf->Get<double>("offset");
   ret.max_cmd = sdf->Get<double>("max_cmd");
 
+  if (sdf->HasElement("quad_gain")) {
+    ret.quad_gain = sdf->Get<double>("quad_gain");
+  } else {
+    gzmsg <<"Thrust model does not specify a quadratic gain; assuming 0\n";
+    ret.quad_gain = 0;
+  }
 
   GZ_ASSERT(sdf->HasElement("speed_gain") == sdf->HasElement("speed_offset"),
       "Thrust model should either have speed_gain AND speed_offset or neither");

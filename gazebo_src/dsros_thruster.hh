@@ -14,6 +14,7 @@
 
 struct DsrosThrusterModel {
   DsrosThrusterModel() {
+    quad_gain = 0;
     gain = 0;
     offset = 0;
     speed_gain = 0;
@@ -24,7 +25,7 @@ struct DsrosThrusterModel {
     if (cmd > max_cmd) {
       cmd = max_cmd;
     }
-    double value = gain*cmd + offset
+    double value = quad_gain*cmd*cmd + gain*cmd + offset
         + speed_gain*cmd*speed + speed_offset*speed;
     if (value <= 0) {
       return 0;
@@ -33,6 +34,7 @@ struct DsrosThrusterModel {
   }
 
   double max_cmd;
+  double quad_gain;
   double gain;
   double offset;
   double speed_gain;
