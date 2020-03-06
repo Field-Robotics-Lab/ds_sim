@@ -42,8 +42,9 @@
 #include <ignition/math/Vector3.hh>
 #include <ignition/math/Quaternion.hh>
 #include <ignition/math/Pose3.hh>
-#include  <ds_sensor_msgs/Ins.h>
-#include  <ds_sensor_msgs/Gyro.h>
+#include <ds_sensor_msgs/Ins.h>
+#include <ds_sensor_msgs/Gyro.h>
+#include <ds_sensor_msgs/PhinsStdbin3.h>
 #include <ros/ros.h>
 #include <string>
 #include <geometry_msgs/QuaternionStamped.h>
@@ -89,12 +90,19 @@ private:
   /// \brief Attitude data publisher
   ros::Publisher att_publisher;
 
+  /// \brief Phins binary publisher
+  ros::Publisher phinsbin_publisher;
+
   ds_sensor_msgs::Ins ins_msg;
   ds_sensor_msgs::Gyro gyro_msg;
+  ds_sensor_msgs::PhinsStdbin3 phinsbin_msg;
   geometry_msgs::QuaternionStamped att_msg;
 
   /// \brief last time on which the data was published.
   common::Time last_time;
+
+  /// \brief Time the last phins binary data was published.
+  common::Time last_phinsbin_time;
 
   /// \brief Pointer to the update event connection.
   gazebo::event::ConnectionPtr connection;
@@ -109,10 +117,12 @@ private:
   std::string ins_topic_name;
   std::string gyro_topic_name;
   std::string att_topic_name;
+  std::string phinsbin_topic_name;
   std::string frame_name;
 
   unsigned int seed;
   double update_rate;
+  double phinsbin_update_rate;
   double noisePR, noiseY, noiseVel, noiseAngVel, noiseAcc, noiseLat;
 
   // actual core data

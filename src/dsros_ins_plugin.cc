@@ -33,6 +33,8 @@
 
 using namespace gazebo;
 
+constexpr static const double RTOD = 180.0/M_PI;
+
 GZ_REGISTER_SENSOR_PLUGIN(dsrosRosInsSensor);
 
 dsrosRosInsSensor::dsrosRosInsSensor() : SensorPlugin(), world2ll(M_PI, 0, M_PI/2.0) {
@@ -75,137 +77,212 @@ void dsrosRosInsSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
     ins_publisher = node->advertise<ds_sensor_msgs::Ins>(ins_topic_name, 1);
     gyro_publisher = node->advertise<ds_sensor_msgs::Gyro>(gyro_topic_name, 1);
     att_publisher = node->advertise<geometry_msgs::QuaternionStamped>(att_topic_name, 1);
+    phinsbin_publisher = node->advertise<ds_sensor_msgs::PhinsStdbin3>(phinsbin_topic_name, 10);
     connection = gazebo::event::Events::ConnectWorldUpdateBegin(
                 boost::bind(&dsrosRosInsSensor::UpdateChild, this, _1));
     last_time = sensor->LastUpdateTime();
+  last_phinsbin_time = sensor->LastUpdateTime();
 }
 
 void dsrosRosInsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
 
-    common::Time current_time = sensor->LastUpdateTime();
+  common::Time current_time = sensor->LastUpdateTime();
 
-    if(update_rate>0 && (current_time-last_time).Double() < 1.0/update_rate) {
-        return;
-    }
+  // if we aren't going to be doing any messages, return now
+  if((update_rate>0 && (current_time-last_time).Double() < 1.0/update_rate)
+      && (phinsbin_update_rate > 0 && (current_time - last_phinsbin_time).Double() < 1.0/phinsbin_update_rate)) {
+    return;
+  }
 
-    if(ins_publisher.getNumSubscribers() > 0 || gyro_publisher.getNumSubscribers() > 0
-                || att_publisher.getNumSubscribers() > 0) {
+  // if ANYONE is listening, update our sensors & add noise
+  if(phinsbin_publisher.getNumSubscribers() > 0 || ins_publisher.getNumSubscribers() > 0
+      || gyro_publisher.getNumSubscribers() > 0 || att_publisher.getNumSubscribers() > 0) {
 
-        // update our raw data
-        data_time = sensor->GetTime();
-        entity_name = sensor->GetEntityName();
-        orientation = sensor->GetOrientation();
-        angular_velocity = sensor->GetAngularVelocity();
-        linear_velocity = sensor->GetLinearVelocity();
-        linear_accel = sensor->GetLinearAcceleration();
-        latitude = sensor->GetLatitude();
+    // update our raw data
+    data_time = sensor->GetTime();
+    entity_name = sensor->GetEntityName();
+    orientation = sensor->GetOrientation();
+    angular_velocity = sensor->GetAngularVelocity();
+    linear_velocity = sensor->GetLinearVelocity();
+    linear_accel = sensor->GetLinearAcceleration();
+    latitude = sensor->GetLatitude();
 
-        // add noise
-        // In order to make the noise correct, define a tiny little 
-        // perturbation to the rotation measurement
-        ignition::math::Quaterniond noiseTform(GaussianKernel(0, noisePR),
-                                         GaussianKernel(0, noisePR),
-                                         GaussianKernel(0, noiseY));
-        // ... and then apply it to the measurement
-        orientation = noiseTform*orientation; 
+    // add noise
+    // In order to make the noise correct, define a tiny little
+    // perturbation to the rotation measurement
+    ignition::math::Quaterniond noiseTform(GaussianKernel(0, noisePR),
+                                           GaussianKernel(0, noisePR),
+                                           GaussianKernel(0, noiseY));
+    // ... and then apply it to the measurement
+    orientation = noiseTform*orientation;
 
-        angular_velocity.X() += GaussianKernel(0, noiseAngVel);
-        angular_velocity.Y() += GaussianKernel(0, noiseAngVel);
-        angular_velocity.Z() += GaussianKernel(0, noiseAngVel);
+    angular_velocity.X() += GaussianKernel(0, noiseAngVel);
+    angular_velocity.Y() += GaussianKernel(0, noiseAngVel);
+    angular_velocity.Z() += GaussianKernel(0, noiseAngVel);
 
-        linear_velocity.X() += GaussianKernel(0, noiseVel);
-        linear_velocity.Y() += GaussianKernel(0, noiseVel);
-        linear_velocity.Z() += GaussianKernel(0, noiseVel);
+    linear_velocity.X() += GaussianKernel(0, noiseVel);
+    linear_velocity.Y() += GaussianKernel(0, noiseVel);
+    linear_velocity.Z() += GaussianKernel(0, noiseVel);
 
-        linear_accel.X() += GaussianKernel(0, noiseAcc);
-        linear_accel.Y() += GaussianKernel(0, noiseAcc);
-        linear_accel.Z() += GaussianKernel(0, noiseAcc);
+    linear_accel.X() += GaussianKernel(0, noiseAcc);
+    linear_accel.Y() += GaussianKernel(0, noiseAcc);
+    linear_accel.Z() += GaussianKernel(0, noiseAcc);
 
-        latitude += GaussianKernel(0, noiseLat);
-    }
+    latitude += GaussianKernel(0, noiseLat);
+  }
 
-    if(ins_publisher.getNumSubscribers() > 0 || gyro_publisher.getNumSubscribers() > 0) {
+  if (phinsbin_update_rate > 0 && (current_time - last_phinsbin_time).Double() >= 1.0/phinsbin_update_rate) {
+    // do the phinsbin update
+    if (phinsbin_publisher.getNumSubscribers() > 0) {
+      // standard header stuff
+      phinsbin_msg.header.stamp.sec = data_time.sec;
+      phinsbin_msg.header.stamp.nsec = data_time.nsec;
+      phinsbin_msg.header.frame_id = frame_name;
+      phinsbin_msg.nav_validity_time = static_cast<double>(data_time.sec) + static_cast<double>(data_time.nsec)*1.0e-9;
+      phinsbin_msg.counter++;
 
-      // prepare message header
-      ins_msg.header.frame_id = frame_name;
-      ins_msg.header.stamp.sec = data_time.sec;
-      ins_msg.header.stamp.nsec = data_time.nsec;
-      ins_msg.header.seq++;
-
-      ins_msg.ds_header.io_time.sec = data_time.sec;
-      ins_msg.ds_header.io_time.nsec = data_time.nsec;
-
-      ins_msg.orientation.x = orientation.X();
-      ins_msg.orientation.y = orientation.Y();
-      ins_msg.orientation.z = orientation.Z();
-      ins_msg.orientation.w = orientation.W();
-
-      ins_msg.linear_velocity.x = linear_velocity.X();
-      ins_msg.linear_velocity.y = linear_velocity.Y();
-      ins_msg.linear_velocity.z = linear_velocity.Z();
-
-      ins_msg.angular_velocity.x = angular_velocity.X();
-      ins_msg.angular_velocity.y = angular_velocity.Y();
-      ins_msg.angular_velocity.z = angular_velocity.Z();
-
-      ins_msg.linear_acceleration.x = linear_accel.X();
-      ins_msg.linear_acceleration.y = linear_accel.Y();
-      ins_msg.linear_acceleration.z = linear_accel.Z();
-
-      // use a local-level frame to get rotations correct
-      ignition::math::Quaterniond ll_rot = orientation;
-      ins_msg.roll = orientation.Roll();
-      ins_msg.pitch = -orientation.Pitch();
-      ins_msg.heading = M_PI/2 - orientation.Yaw();
-      if (ins_msg.heading > 2*M_PI) {
-        ins_msg.heading -= (2*M_PI);
-      } else if (ins_msg.heading < 0.0) {
-        ins_msg.heading += (2*M_PI);
+      // heading/pitch/roll + rates + stddev
+      phinsbin_msg.roll = orientation.Roll() * RTOD;
+      phinsbin_msg.pitch = orientation.Pitch() * RTOD;
+      phinsbin_msg.heading = M_PI/2 - orientation.Yaw();
+      if (phinsbin_msg.heading > 2*M_PI) {
+        phinsbin_msg.heading -= (2*M_PI);
+      } else if (phinsbin_msg.heading < 0.0) {
+        phinsbin_msg.heading += (2 * M_PI);
       }
+      phinsbin_msg.heading *= RTOD;
+
+      phinsbin_msg.roll_rate = angular_velocity.X()*RTOD;
+      phinsbin_msg.pitch_rate = angular_velocity.Y()*RTOD;
+      phinsbin_msg.heading_rate = angular_velocity.Z()*RTOD;
+
+      phinsbin_msg.heading_stddev = noiseY*RTOD;
+      phinsbin_msg.roll_stddev = noisePR*RTOD;
+      phinsbin_msg.pitch_stddev = noisePR*RTOD;
+
+      // now orientation-- NOTE-- this requires a little transform from ENU to NWU
+      ignition::math::Quaterniond enu2nwu(sqrt(2.0)/2.0, 0, 0, -sqrt(2.0)/2.0);
+      ignition::math::Quaterniond phins_quat = enu2nwu * orientation;
+      phinsbin_msg.attitude_quaternion[0] = phins_quat.W();
+      phinsbin_msg.attitude_quaternion[1] = phins_quat.X();
+      phinsbin_msg.attitude_quaternion[2] = phins_quat.Y();
+      phinsbin_msg.attitude_quaternion[3] = phins_quat.Z();
+
+      phinsbin_msg.attitude_quaternion_stddev[0] = noisePR;
+      phinsbin_msg.attitude_quaternion_stddev[1] = noisePR;
+      phinsbin_msg.attitude_quaternion_stddev[2] = noiseY;
+
+      // now body-rates
+      phinsbin_msg.body_rates_XVn[0] = angular_velocity.X(); // XV1-- roll
+      phinsbin_msg.body_rates_XVn[1] = angular_velocity.Y(); // XV2-- pitch
+      phinsbin_msg.body_rates_XVn[2] = angular_velocity.Z(); // XV3-- yaw
+
+      phinsbin_msg.body_rotrate_stddev_XVn[0] = noiseAngVel; // XV1-- roll
+      phinsbin_msg.body_rotrate_stddev_XVn[1] = noiseAngVel; // XV2-- pitch
+      phinsbin_msg.body_rotrate_stddev_XVn[2] = noiseAngVel; // XV3-- yaw
+
+      // finally, accelerations
+      phinsbin_msg.body_accel_XVn[0] = linear_accel.X(); // XV1-- fwd
+      phinsbin_msg.body_accel_XVn[1] = linear_accel.Y(); // XV2-- port
+      phinsbin_msg.body_accel_XVn[2] = linear_accel.Z(); // XV3-- up
+
+      phinsbin_msg.body_accel_stddev_XVn[0] = noiseAcc;
+      phinsbin_msg.body_accel_stddev_XVn[1] = noiseAcc;
+      phinsbin_msg.body_accel_stddev_XVn[2] = noiseAcc;
+
+      phinsbin_publisher.publish(phinsbin_msg);
+      ros::spinOnce();
     }
 
-    if(ins_publisher.getNumSubscribers() > 0) {
+    last_phinsbin_time = current_time;
+  }
 
-        ins_msg.latitude = latitude;
+  // if none of the low-rate stuff is going to happen, just return here
+  if (update_rate>0 && (current_time-last_time).Double() < 1.0/update_rate) {
+    return;
+  }
 
-        // publish data
-        ins_publisher.publish(ins_msg);
-        ros::spinOnce();
+
+  if(ins_publisher.getNumSubscribers() > 0 || gyro_publisher.getNumSubscribers() > 0) {
+
+    // prepare message header
+    ins_msg.header.frame_id = frame_name;
+    ins_msg.header.stamp.sec = data_time.sec;
+    ins_msg.header.stamp.nsec = data_time.nsec;
+    ins_msg.header.seq++;
+
+    ins_msg.ds_header.io_time.sec = data_time.sec;
+    ins_msg.ds_header.io_time.nsec = data_time.nsec;
+
+    ins_msg.orientation.x = orientation.X();
+    ins_msg.orientation.y = orientation.Y();
+    ins_msg.orientation.z = orientation.Z();
+    ins_msg.orientation.w = orientation.W();
+
+    ins_msg.linear_velocity.x = linear_velocity.X();
+    ins_msg.linear_velocity.y = linear_velocity.Y();
+    ins_msg.linear_velocity.z = linear_velocity.Z();
+
+    ins_msg.angular_velocity.x = angular_velocity.X();
+    ins_msg.angular_velocity.y = angular_velocity.Y();
+    ins_msg.angular_velocity.z = angular_velocity.Z();
+
+    ins_msg.linear_acceleration.x = linear_accel.X();
+    ins_msg.linear_acceleration.y = linear_accel.Y();
+    ins_msg.linear_acceleration.z = linear_accel.Z();
+
+    ins_msg.roll = orientation.Roll();
+    ins_msg.pitch = -orientation.Pitch();
+    ins_msg.heading = M_PI/2 - orientation.Yaw();
+    if (ins_msg.heading > 2*M_PI) {
+      ins_msg.heading -= (2*M_PI);
+    } else if (ins_msg.heading < 0.0) {
+      ins_msg.heading += (2*M_PI);
     }
+  }
 
-    if (gyro_publisher.getNumSubscribers() > 0) {
-      gyro_msg.header = ins_msg.header;
-      gyro_msg.ds_header = ins_msg.ds_header;
+  if(ins_publisher.getNumSubscribers() > 0) {
 
-      gyro_msg.heading = ins_msg.heading;
-      gyro_msg.pitch = ins_msg.pitch;
-      gyro_msg.roll = ins_msg.roll;
+    ins_msg.latitude = latitude;
 
-      gyro_msg.heading_covar = noiseY;
-      gyro_msg.pitch_covar = noisePR;
-      gyro_msg.roll_covar = noisePR;
+    // publish data
+    ins_publisher.publish(ins_msg);
+    ros::spinOnce();
+  }
 
-      gyro_msg.orientation = ins_msg.orientation;
+  if (gyro_publisher.getNumSubscribers() > 0) {
+    gyro_msg.header = ins_msg.header;
+    gyro_msg.ds_header = ins_msg.ds_header;
 
-      gyro_publisher.publish(gyro_msg);
-    }
+    gyro_msg.heading = ins_msg.heading;
+    gyro_msg.pitch = ins_msg.pitch;
+    gyro_msg.roll = ins_msg.roll;
 
-    if (att_publisher.getNumSubscribers() > 0) {
-        att_msg.header.frame_id = frame_name;
-        att_msg.header.stamp.sec = data_time.sec;
-        att_msg.header.stamp.nsec = data_time.nsec;
-        att_msg.header.seq++;
+    gyro_msg.heading_covar = noiseY;
+    gyro_msg.pitch_covar = noisePR;
+    gyro_msg.roll_covar = noisePR;
 
-        att_msg.quaternion.x = orientation.X();
-        att_msg.quaternion.y = orientation.Y();
-        att_msg.quaternion.z = orientation.Z();
-        att_msg.quaternion.w = orientation.W();
+    gyro_msg.orientation = ins_msg.orientation;
 
-        att_publisher.publish(att_msg);
-        ros::spinOnce();
-    }
+    gyro_publisher.publish(gyro_msg);
+  }
 
-    last_time = current_time;
+  if (att_publisher.getNumSubscribers() > 0) {
+    att_msg.header.frame_id = frame_name;
+    att_msg.header.stamp.sec = data_time.sec;
+    att_msg.header.stamp.nsec = data_time.nsec;
+    att_msg.header.seq++;
+
+    att_msg.quaternion.x = orientation.X();
+    att_msg.quaternion.y = orientation.Y();
+    att_msg.quaternion.z = orientation.Z();
+    att_msg.quaternion.w = orientation.W();
+
+    att_publisher.publish(att_msg);
+    ros::spinOnce();
+  }
+
+  last_time = current_time;
 }
 
 double dsrosRosInsSensor::GaussianKernel(double mu, double sigma) {
@@ -273,6 +350,18 @@ bool dsrosRosInsSensor::LoadParameters() {
     ins_topic_name = "/attitude";
     ROS_WARN_STREAM("missing <attTopicName>, set to /namespace/default: " << att_topic_name);
   }
+
+  if (sdf->HasElement("phinsbinTopicName"))
+  {
+    phinsbin_topic_name =  sdf->Get<std::string>("phinsbinTopicName");
+    ROS_INFO_STREAM("<attTopicName> set to: "<<phinsbin_topic_name);
+  }
+  else
+  {
+    phinsbin_topic_name = "/phinsbin";
+    ROS_WARN_STREAM("missing <phinsbinTopicName>, set to /namespace/default: " << phinsbin_topic_name);
+  }
+
   //BODY NAME
   if (sdf->HasElement("frameName"))
   {
@@ -295,6 +384,18 @@ bool dsrosRosInsSensor::LoadParameters() {
   {
     update_rate = 1.0;
     ROS_WARN_STREAM("missing <updateRateHZ>, set to default: " << update_rate);
+  }
+
+  //PHINSBIN UPDATE RATE
+  if (sdf->HasElement("phinsbinUpdateRateHZ"))
+  {
+    phinsbin_update_rate =  sdf->Get<double>("phinsbinUpdateRateHZ");
+    ROS_INFO_STREAM("<phinsbinUpdateRateHZ> set to: " << phinsbin_update_rate);
+  }
+  else
+  {
+    phinsbin_update_rate = update_rate;
+    ROS_WARN_STREAM("missing <phinsbinUpdateRateHZ>, set to default: " << phinsbin_update_rate);
   }
 
   noisePR     = LoadNoise("gaussianNoisePR", M_PI/180.0);

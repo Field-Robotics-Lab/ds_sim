@@ -52,6 +52,7 @@ void DsrosThruster::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
   // check if this thruster is flipped in the driver
   if (_sdf->HasElement("propdir")) {
     int tmp=_sdf->Get<int>("propdir");
+    std::cout <<"Thruster Link: " <<thruster_link <<" dir: " <<tmp <<"\n";
     if (tmp > 0) {
       flippedAtDriver = false;
     } else {
@@ -174,7 +175,11 @@ void DsrosThruster::OnUpdate(const common::UpdateInfo& _info) {
 
   // calculate the scalar thrust
   double thrust_val = 0;
-  if (command >= 0) {
+  bool thrust_forward = command >= 0;
+  if (flippedAtDriver) {
+    thrust_forward = !thrust_forward;
+  }
+  if (thrust_forward) {
     // this function will automatically clamp to 0 if the thrust is invalid
     thrust_val = forward.calc_thrust(fabs(command), fabs(apparant_velocity));
   } else {
