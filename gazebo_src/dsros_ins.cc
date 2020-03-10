@@ -47,6 +47,7 @@ using namespace gazebo;
 using namespace sensors;
 
 DsrosInsSensor::DsrosInsSensor() : Sensor(sensors::OTHER){
+  add_gravity = true;
     // do nothing
 };
 
@@ -131,7 +132,9 @@ bool DsrosInsSensor::UpdateImpl(const bool _force) {
     // TODO: There should probably be a centripital acceleration term or something?
 
     // apply gravity
-    linear_accel -= insPose.Rot().Inverse().RotateVector(gravity);
+    if (add_gravity) {
+      linear_accel -= insPose.Rot().Inverse().RotateVector(gravity);
+    }
 
     // Get the latitude
     double lat;
@@ -207,6 +210,14 @@ double DsrosInsSensor::GetPitch() const {
 double DsrosInsSensor::GetHeading() const {
     std::lock_guard<std::mutex>(this->mutex);
     return this->msg.heading_deg();
+}
+
+bool DsrosInsSensor::GetAddGravity() const {
+  return this->add_gravity;
+}
+
+void DsrosInsSensor::SetAddGravity(bool v) {
+  this->add_gravity = v;
 }
 
 GZ_REGISTER_STATIC_SENSOR("dsros_ins", DsrosInsSensor);

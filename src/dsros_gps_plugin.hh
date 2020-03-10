@@ -37,6 +37,7 @@
 
 #pragma once
 
+#include <gazebo/physics/Link.hh>
 #include <gazebo/common/Plugin.hh>
 #include <gazebo/common/UpdateInfo.hh>
 #include <ignition/math/Vector3.hh>
@@ -90,6 +91,8 @@ private:
   /// \brief Pointer to the sensor.
   std::shared_ptr<gazebo::sensors::GpsSensor> sensor;
 
+  gazebo::physics::LinkPtr parent_link;
+
   /// \brief Pointer to the sdf config file.
   sdf::ElementPtr sdf;
 
@@ -99,6 +102,10 @@ private:
 
   unsigned int seed;
   double update_rate;
+  // we have to do our own local -> lat/lon conversion, because
+  // gazebo's is b0rk3n.  Just use Alvin XY for now.
+  // It's super-dumb, but easy to implement.
+  double lat_origin, lon_origin, lat_origin_rad;
     // noise, in meters, for
   double noiseLL_m, noiseZ_m;
     double min_altitude;

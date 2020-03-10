@@ -87,6 +87,9 @@ namespace sensors {
     public: double GetPitch() const;
     public: double GetHeading() const;
 
+   public: bool GetAddGravity() const;
+   public: void SetAddGravity(bool v);
+
     protected: virtual bool UpdateImpl(const bool _force);
 
     protected:
@@ -97,6 +100,7 @@ namespace sensors {
         transport::PublisherPtr insPub;
         std::string topicName;
         ds_sim::msgs::Ins msg;
+        bool add_gravity;
   }; // class declaration
 }; // namespace sensors
 }; // namespace gazebo

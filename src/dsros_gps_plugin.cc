@@ -29,6 +29,7 @@
 */
 // lots of this implementation blatently stolen from:
 // https://github.com/ros-simulation/gazebo_ros_pkgs/blob/kinetic-devel/gazebo_plugins/src/gazebo_ros_imu_sensor.cpp
+#include <gazebo/physics/physics.hh>
 #include "dsros_gps_plugin.hh"
 
 using namespace gazebo;
@@ -57,7 +58,19 @@ void dsrosRosGpsSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
     }
     sensor->SetActive(true);
 
-    if (!LoadParameters()) {
+    // Gazebo's Spherical Coordinates conversion is b0rk3n.  We have to do our own.
+    // Start by grabbing the origin
+    auto world = gazebo::physics::get_world(sensor->WorldName());
+    auto spherical = world->GetSphericalCoordinates();
+    lat_origin_rad = spherical->LatitudeReference().Radian();
+    lat_origin = spherical->LatitudeReference().Degree();
+    lon_origin = spherical->LongitudeReference().Degree();
+    gzmsg <<"ORIGIN: " <<lat_origin <<", " <<lon_origin <<std::endl;
+
+    physics::EntityPtr parentEntity = world->GetEntity(sensor->ParentName());
+    parent_link = boost::dynamic_pointer_cast<gazebo::physics::Link>(parentEntity);
+
+  if (!LoadParameters()) {
         ROS_FATAL("Error loading parameters for sensor plugin!");
         return;
     }
@@ -88,11 +101,13 @@ void dsrosRosGpsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         // update our raw data
         data_time = sensor->LastMeasurementTime();
         entity_name = frame_name;
-        latitude  = sensor->Latitude().Degree();
-        longitude = sensor->Longitude().Degree();
+        // Gazebo is ENU.  Unless you use the Spherical Coordinates module, then it's screwy
+        ignition::math::Pose3d gpsPose = sensor->Pose() + parent_link->GetWorldPose().Ign();
+        double easting = gpsPose.Pos().X();
+        double northing = gpsPose.Pos().Y();
         altitude  = sensor->Altitude();
 
-        double latrad = sensor->Latitude().Radian();
+        double latrad = lat_origin_rad;
         // use the mdeglat/mdeglon stuff from dslpp
         double dx = 111415.13 * cos(latrad) - 94.55 * cos(3.0*latrad)
             		+ 0.12 * cos(5.0*latrad);
@@ -102,8 +117,8 @@ void dsrosRosGpsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
 
         // We use local AlvinXY for this.  Its terrible, but we're using REALLY small
         // displacements, so its valid most places
-        latitude  += GaussianKernel(0, noiseLL_m)/dy;
-        longitude += GaussianKernel(0, noiseLL_m)/dx;
+        latitude  = lat_origin + (northing + GaussianKernel(0, noiseLL_m))/dy;
+        longitude = lon_origin + (easting + GaussianKernel(0, noiseLL_m))/dx;
         altitude  += GaussianKernel(0, noiseZ_m);
 
         gps_msg.header.frame_id = frame_name;

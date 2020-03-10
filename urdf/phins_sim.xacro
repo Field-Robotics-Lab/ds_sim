@@ -48,6 +48,7 @@ POSSIBILITY OF SUCH DAMAGE.
         <attTopicName>${att_topic}</attTopicName>
         <phinsbinTopicName>${phinsbin_topic}</phinsbinTopicName>
         <frameName>${name}_link</frameName>
+        <includeGravity>False</includeGravity>
         <updateRateHZ>10</updateRateHZ>
         <phinsbinUpdateRateHZ>100</phinsbinUpdateRateHZ>
         <gaussianNoisePR>0.001</gaussianNoisePR>

@@ -67,6 +67,9 @@ void dsrosRosInsSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
         return;
     }
 
+    // setup our sensor
+    sensor->SetAddGravity(use_gravity);
+
     if (!ros::isInitialized()) {
         ROS_FATAL("ROS has not been initialized properly...");
         return;
@@ -316,6 +319,12 @@ bool dsrosRosInsSensor::LoadParameters() {
     robot_namespace = "/" +scoped_name.substr(0,it)+"/";
     ROS_WARN_STREAM("missing <robotNamespace>, set to default: " << robot_namespace);
   }
+
+  use_gravity = true;
+  if (sdf->HasElement("includeGravity")) {
+    use_gravity = sdf->Get<bool>("includeGravity");
+  }
+  ROS_INFO_STREAM("<includeGravity> set to: " <<use_gravity);
 
   //TOPICS
   if (sdf->HasElement("insTopicName"))

@@ -124,6 +124,7 @@ private:
   double update_rate;
   double phinsbin_update_rate;
   double noisePR, noiseY, noiseVel, noiseAngVel, noiseAcc, noiseLat;
+  bool use_gravity;
 
   // actual core data
   common::Time data_time;

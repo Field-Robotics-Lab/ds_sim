@@ -46,12 +46,12 @@ POSSIBILITY OF SUCH DAMAGE.
       <plugin name="${name}_sensor_controller" filename="libdsros_ros_gps.so">
         <robotNamespace>${robot_namespace}</robotNamespace>
         <topicName>${topic}</topicName>
-        <frameName>world</frameName>
+        <frameName>${name}_link</frameName>
         <updateRateHZ>1.0</updateRateHZ>
         <!-- Minimum altitude (- max depth) at which we get a position fix -->
         <minAltitude>0.01</minAltitude>
-        <gaussianNoiseLL_meters>1.0</gaussianNoiseLL_meters>
-        <gaussianNoiseAlt_meters>2.0</gaussianNoiseAlt_meters>
+        <gaussianNoiseLL_meters>0.0</gaussianNoiseLL_meters>
+        <gaussianNoiseAlt_meters>0.0</gaussianNoiseAlt_meters>
       </plugin>
     </sensor>
   </gazebo>
