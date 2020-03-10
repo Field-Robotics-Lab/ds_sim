@@ -125,8 +125,10 @@ bool DsrosInsSensor::UpdateImpl(const bool _force) {
 
     // linear acceleration
     ignition::math::Vector3d gravity = this->world->GetPhysicsEngine()->GetGravity().Ign();
-    ignition::math::Vector3d linear_accel = this->parentLink->GetWorldLinearAccel().Ign();
-    ignition::math::Vector3d angular_accel = this->parentLink->GetWorldAngularAccel().Ign();
+    //ignition::math::Vector3d linear_accel = this->parentLink->GetWorldLinearAccel().Ign();
+    //ignition::math::Vector3d angular_accel = this->parentLink->GetWorldAngularAccel().Ign();
+    ignition::math::Vector3d linear_accel = this->parentLink->GetRelativeLinearAccel().Ign();
+    ignition::math::Vector3d angular_accel = this->parentLink->GetRelativeAngularAccel().Ign();
     // lever-arm offset
     linear_accel += angular_accel.Cross(this->pose.Pos());
     // TODO: There should probably be a centripital acceleration term or something?

@@ -164,8 +164,8 @@ void dsrosRosInsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
       phinsbin_msg.pitch_stddev = noisePR*RTOD;
 
       // now orientation-- NOTE-- this requires a little transform from ENU to NWU
-      ignition::math::Quaterniond enu2nwu(sqrt(2.0)/2.0, 0, 0, -sqrt(2.0)/2.0);
-      ignition::math::Quaterniond phins_quat = enu2nwu * orientation;
+      ignition::math::Quaterniond nwu2enu(sqrt(2.0)/2.0, 0, 0, sqrt(2.0)/2.0);
+      ignition::math::Quaterniond phins_quat = nwu2enu * orientation.Inverse();
       phinsbin_msg.attitude_quaternion[0] = phins_quat.W();
       phinsbin_msg.attitude_quaternion[1] = phins_quat.X();
       phinsbin_msg.attitude_quaternion[2] = phins_quat.Y();
