@@ -19,8 +19,8 @@
 
     <!-- Guessed from google maps; need real survey data -->
     <spherical_coordinates>
-      <latitude_deg>41.534688</latitude_deg>
-      <longitude_deg>-70.644196</longitude_deg>
+      <latitude_deg>41.5347</latitude_deg>
+      <longitude_deg>-70.6442</longitude_deg>
     </spherical_coordinates>
 
     <light type="directional" name="sun1">

@@ -98,7 +98,8 @@ void dsrosRosGpsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
 
     if(publisher.getNumSubscribers() > 0) {
 
-        // update our raw data
+
+      // update our raw data
         data_time = sensor->LastMeasurementTime();
         entity_name = frame_name;
         // Gazebo is ENU.  Unless you use the Spherical Coordinates module, then it's screwy
@@ -107,7 +108,7 @@ void dsrosRosGpsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         double northing = gpsPose.Pos().Y();
         altitude  = sensor->Altitude();
 
-        double latrad = lat_origin_rad;
+      double latrad = lat_origin_rad;
         // use the mdeglat/mdeglon stuff from dslpp
         double dx = 111415.13 * cos(latrad) - 94.55 * cos(3.0*latrad)
             		+ 0.12 * cos(5.0*latrad);
