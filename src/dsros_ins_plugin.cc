@@ -80,7 +80,9 @@ void dsrosRosInsSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
     ins_publisher = node->advertise<ds_sensor_msgs::Ins>(ins_topic_name, 1);
     gyro_publisher = node->advertise<ds_sensor_msgs::Gyro>(gyro_topic_name, 1);
     att_publisher = node->advertise<geometry_msgs::QuaternionStamped>(att_topic_name, 1);
-    phinsbin_publisher = node->advertise<ds_sensor_msgs::PhinsStdbin3>(phinsbin_topic_name, 10);
+    if (!phinsbin_topic_name.empty()) {
+      phinsbin_publisher = node->advertise<ds_sensor_msgs::PhinsStdbin3>(phinsbin_topic_name, 10);
+    }
     connection = gazebo::event::Events::ConnectWorldUpdateBegin(
                 boost::bind(&dsrosRosInsSensor::UpdateChild, this, _1));
     last_time = sensor->LastUpdateTime();
@@ -98,7 +100,7 @@ void dsrosRosInsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
   }
 
   // if ANYONE is listening, update our sensors & add noise
-  if(phinsbin_publisher.getNumSubscribers() > 0 || ins_publisher.getNumSubscribers() > 0
+  if( (!phinsbin_topic_name.empty() && phinsbin_publisher.getNumSubscribers() > 0) || ins_publisher.getNumSubscribers() > 0
       || gyro_publisher.getNumSubscribers() > 0 || att_publisher.getNumSubscribers() > 0) {
 
     // update our raw data
@@ -136,7 +138,7 @@ void dsrosRosInsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
 
   if (phinsbin_update_rate > 0 && (current_time - last_phinsbin_time).Double() >= 1.0/phinsbin_update_rate) {
     // do the phinsbin update
-    if (phinsbin_publisher.getNumSubscribers() > 0) {
+    if (!phinsbin_topic_name.empty() && phinsbin_publisher.getNumSubscribers() > 0) {
       // standard header stuff
       phinsbin_msg.header.stamp.sec = data_time.sec;
       phinsbin_msg.header.stamp.nsec = data_time.nsec;

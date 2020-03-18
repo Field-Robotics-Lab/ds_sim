@@ -29,10 +29,14 @@
 */
 
 
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 #include "dsros_reson_plugin.hh"
 
 
 using namespace gazebo;
+
+constexpr static const double RTOD = 180.0/M_PI;
 
 GZ_REGISTER_SENSOR_PLUGIN(dsrosRosResonSensor);
 
@@ -69,10 +73,10 @@ void dsrosRosResonSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_)
 
     node = new ros::NodeHandle(this->robot_namespace);
 
-    // TODO: Add publishers for pointcloud
     reson_data_publisher = node->advertise<ds_multibeam_msgs::MultibeamRaw>(topic_name + "/raw_multibeam", 5);
+    pointcloud_publisher = node->advertise<sensor_msgs::PointCloud2>(topic_name + "/pointcloud", 10);
 
-    // connect our UpdateChild function to get called whenever there's a world update event
+  // connect our UpdateChild function to get called whenever there's a world update event
     connection = gazebo::event::Events::ConnectWorldUpdateBegin(
                 boost::bind(&dsrosRosResonSensor::UpdateChild, this, _1));
     last_time = sensor->LastUpdateTime();
@@ -86,21 +90,62 @@ void dsrosRosResonSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         return;
     }
 
-    // TODO: Remove this
-    // Quick demo to make sure we're actually getting real ranges.
-    int centerbeam_idx = sensor->RangeCount() / 2;
-    //std::cout <<"Center beam: " <<sensor->Range(centerbeam_idx) <<std::endl;
+    int num_beams = sensor->RangeCount();
 
-    if(reson_data_publisher.getNumSubscribers() > 0) {
+    if(reson_data_publisher.getNumSubscribers() > 0 || pointcloud_publisher.getNumSubscribers() > 0) {
 
-        // TODO: Fill in mb_msg
+        mb_msg.header.frame_id = frame_name;
+        mb_msg.header.stamp.sec = current_time.sec;
+        mb_msg.header.stamp.nsec = current_time.nsec;
+        mb_msg.ds_header.io_time = mb_msg.header.stamp;
+        mb_msg.soundspeed = 1500;
 
-        // publish data
+        mb_msg.beamflag.resize(num_beams);
+        mb_msg.intensity.resize(num_beams);
+        mb_msg.angleAcrossTrack.resize(num_beams);
+        mb_msg.angleAlongTrack.resize(num_beams);
+        mb_msg.twowayTravelTime.resize(num_beams);
+        mb_msg.txDelay.resize(num_beams);
+
+        pc_msg.header = mb_msg.header;
+        pc_msg.height = 1;
+        pc_msg.width = num_beams;
+        sensor_msgs::PointCloud2Modifier modifier(pc_msg);
+        modifier.setPointCloud2Fields(4, "x", 1, sensor_msgs::PointField::FLOAT32, "y", 1,
+                                    sensor_msgs::PointField::FLOAT32, "z", 1, sensor_msgs::PointField::FLOAT32);
+        modifier.resize(num_beams);
+        sensor_msgs::PointCloud2Iterator<float> iter_distance(pc_msg, "x");
+        sensor_msgs::PointCloud2Iterator<float> iter_acrossTrack(pc_msg, "y");
+        sensor_msgs::PointCloud2Iterator<float> iter_alongTrack(pc_msg, "z");
+
+        double angle = sensor->AngleMin().Radian();
+        double angle_increment = sensor->AngleResolution();
+        for (size_t i=0; i<num_beams; i++) {
+            double range = sensor->Range(i);
+
+            mb_msg.beamflag[i] = ds_multibeam_msgs::MultibeamRaw::BEAM_OK;
+            mb_msg.intensity[i] = 0; // not supported by ROS.  Yay.
+            mb_msg.angleAcrossTrack[i] = angle;
+            mb_msg.angleAlongTrack[i] = 0;
+            mb_msg.twowayTravelTime[i] = 2.0*range / 1500.0;
+            mb_msg.txDelay[i] = 0;
+
+            *iter_acrossTrack = sin(angle) * range;
+            *iter_distance = cos(angle) * range;
+            *iter_alongTrack = 0;
+
+            angle += angle_increment;
+            ++iter_distance;
+            ++iter_acrossTrack;
+            ++iter_alongTrack;
+        }
+
+      // publish data
         reson_data_publisher.publish(mb_msg);
+
+        pointcloud_publisher.publish(pc_msg);
         ros::spinOnce();
     }
-
-    // TODO: Add a publisher for the pointcloud data
 
     last_time = current_time;
 }

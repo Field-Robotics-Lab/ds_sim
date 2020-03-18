@@ -71,7 +71,7 @@ class dsrosRosResonSensor : public SensorPlugin {
   ros::Publisher pointcloud_publisher;
 
   ds_multibeam_msgs::MultibeamRaw mb_msg;
-  // TODO: message (pointcloud_msg)
+  sensor_msgs::PointCloud2 pc_msg;
 
   /// \brief last time on which the data was published.
   common::Time last_time;

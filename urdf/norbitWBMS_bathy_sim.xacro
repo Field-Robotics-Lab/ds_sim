@@ -30,7 +30,7 @@ POSSIBILITY OF SUCH DAMAGE.
 -->
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-<xacro:macro name="norbitWBMS_bathy_sim" params="name parent_link xyz rpy topic">
+<xacro:macro name="norbitWBMS_bathy_sim" params="name parent_link xyz rpy robot_namespace topic">
 
   <gazebo reference="${name}_link">
     <material>Gazebo/Black</material>
@@ -60,9 +60,18 @@ POSSIBILITY OF SUCH DAMAGE.
                     <resolution>0.01</resolution>
                 </range>
             </ray>
+            <!--
             <plugin name="${name}_sensor_controller" filename="libgazebo_ros_laser.so">
                 <topicName>${topic}</topicName>
                 <frameName>${name}_link</frameName>
+            </plugin>
+            -->
+            <plugin name="${name}_sensor_controller" filename="libdsros_ros_reson.so">
+                <robotNamespace>${robot_namespace}</robotNamespace>
+                <topicName>${topic}</topicName>
+                <frameName>${name}_link</frameName>
+                <updateRateHZ>5.0</updateRateHZ>
+                <gaussianNoise>0.0</gaussianNoise>
             </plugin>
     </sensor>
   </gazebo>
