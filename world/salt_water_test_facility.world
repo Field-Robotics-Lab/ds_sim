@@ -8,7 +8,7 @@
         <!-- <pose>11 -12 -1. 0 0.25 1.9</pose> -->
 
         <!-- for submerged starts -->
-       <pose>0 0 0 0 0 0</pose>
+        <pose>0.0 -8.0 6.0 0 0.76 1.5708</pose>
       </camera>
     </gui>
 
