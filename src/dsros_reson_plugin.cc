@@ -111,7 +111,7 @@ void dsrosRosResonSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         pc_msg.height = 1;
         pc_msg.width = num_beams;
         sensor_msgs::PointCloud2Modifier modifier(pc_msg);
-        modifier.setPointCloud2Fields(4, "x", 1, sensor_msgs::PointField::FLOAT32, "y", 1,
+        modifier.setPointCloud2Fields(3, "x", 1, sensor_msgs::PointField::FLOAT32, "y", 1,
                                     sensor_msgs::PointField::FLOAT32, "z", 1, sensor_msgs::PointField::FLOAT32);
         modifier.resize(num_beams);
         sensor_msgs::PointCloud2Iterator<float> iter_distance(pc_msg, "x");

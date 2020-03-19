@@ -41,17 +41,17 @@ POSSIBILITY OF SUCH DAMAGE.
         <sensor name="${name}_sensor" type="ray">
             <always_on>1</always_on>
             <pose frame="">${xyz} ${rpy}</pose>
-            <visualize>false</visualize>
+            <visualize>true</visualize>
             <update_rate>5</update_rate>
             <ray>
                 <!-- These are our beams.  They're limited equi-angular, but the distinction probably
                      doesn't matter -->
                 <scan>
                     <horizontal>
-                        <samples>512</samples>
+                        <samples>256</samples>
                         <resolution>0.40</resolution>
-                        <min_angle>-${pi/180*100}</min_angle>
-                        <max_angle>${pi/180*100}</max_angle>
+                        <min_angle>-${pi/180*60}</min_angle>
+                        <max_angle>${pi/180*60}</max_angle>
                     </horizontal>
                 </scan>
                 <range>
