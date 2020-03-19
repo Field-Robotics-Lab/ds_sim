@@ -12,7 +12,7 @@ DsrosThruster::DsrosThruster() {
   command = 0;
   vehicle_in_loop = false;
   enabled = true;
-  flippedAtDriver = false;
+  posIsFwd = false;
 }
 
 void DsrosThruster::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
@@ -54,9 +54,9 @@ void DsrosThruster::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
     int tmp=_sdf->Get<int>("propdir");
     std::cout <<"Thruster Link: " <<thruster_link <<" dir: " <<tmp <<"\n";
     if (tmp > 0) {
-      flippedAtDriver = false;
+      posIsFwd = false;
     } else {
-      flippedAtDriver = true;
+      posIsFwd = true;
     }
   }
 
@@ -176,7 +176,7 @@ void DsrosThruster::OnUpdate(const common::UpdateInfo& _info) {
   // calculate the scalar thrust
   double thrust_val = 0;
   bool thrust_forward = command >= 0;
-  if (flippedAtDriver) {
+  if (posIsFwd) {
     thrust_forward = !thrust_forward;
   }
   if (thrust_forward) {
@@ -210,13 +210,8 @@ void DsrosThruster::OnUpdate(const common::UpdateInfo& _info) {
       state_msg.ds_header.io_time = state_msg.header.stamp;
       state_msg.enable = enabled;
       state_msg.thruster_name = thruster_name;
-      if (flippedAtDriver) {
-        state_msg.cmd_value = -command;
-        state_msg.actual_value = -command;
-      } else {
-        state_msg.cmd_value = command;
-        state_msg.actual_value = command;
-      }
+      state_msg.cmd_value = command;
+      state_msg.actual_value = command;
 
       state_pub.publish(state_msg);
     }
