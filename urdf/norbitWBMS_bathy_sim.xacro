@@ -48,8 +48,19 @@ POSSIBILITY OF SUCH DAMAGE.
                      doesn't matter -->
                 <scan>
                     <horizontal>
-                        <samples>256</samples>
-                        <resolution>0.40</resolution>
+                        <!-- Ok, so this is kinda screwy and backwards, but follow along.
+                        samples: The number of rays that are actually cast internally.  We'd
+                        like to cast rays at roughly 1 degree increments, because we'd like to encourage
+                        some statistical dependence between beams.
+
+                        So, we'll go with 128 samples- roughly 1 degree- then upsample by 2 to get
+                        256 actual beams.
+
+                        This is backwards from the sensible way to design the config, but
+                        hey, gazebo.
+                        -->
+                        <samples>128</samples>
+                        <resolution>2.0</resolution>
                         <min_angle>-${pi/180*60}</min_angle>
                         <max_angle>${pi/180*60}</max_angle>
                     </horizontal>
