@@ -35,9 +35,12 @@
 
 //#include <sentry_sim/SentryDynamics_plugin.hh>
 
+// REV: MELODIC 1 0
+
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
-#include <gazebo/common/common.hh>
+//#include <gazebo/common/common.hh>
+#include <gazebo/common/CommonIface.hh>
 
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
@@ -53,7 +56,11 @@ class DsJointStatePublisher : public ModelPlugin {
   public:
     virtual ~DsJointStatePublisher() {
         if (updateConnection) {
-            gazebo::event::Events::DisconnectWorldUpdateBegin(this->updateConnection);
+	  // Melodic API change
+	  // Deprecation: public: void Events::Disconnect.*(ConnectionPtr);
+	  // Replacement: Delete the Connection object, perhaps by calling reset() on its smart pointer.
+	  //gazebo::event::Events::DisconnectWorldUpdateBegin(this->updateConnection);
+	  this->updateConnection.reset();
         }
 
         if (rosNode) {
@@ -148,14 +155,14 @@ class DsJointStatePublisher : public ModelPlugin {
 
             // check if the joint should be ignored
             if (joint->HasType(gazebo::physics::Base::EntityType::FIXED_JOINT)
-                || joint->GetAngleCount() > 1
-                || joint->GetLowerLimit(0).Radian() == 0 && joint->GetUpperLimit(0).Radian() == 0) {
+                || joint->DOF() > 1
+                || joint->LowerLimit(0) == 0 && joint->UpperLimit(0) == 0) {
                 // ignore this joint
                 jointState.position[i] = 0;
                 jointState.velocity[i] = 0;
                 jointState.effort[i] = 0;
             } else {
-                jointState.position[i] = sign*joint->GetAngle(0).Radian();
+                jointState.position[i] = sign*joint->Position(0);
                 jointState.velocity[i] = joint->GetVelocity(0);
                 jointState.effort[i] = joint->GetForce(0);
             }
