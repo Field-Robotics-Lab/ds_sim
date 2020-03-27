@@ -83,49 +83,49 @@ set(SENSORS_SRCS
     gazebo_src/dsros_sensors.cc)
 
 # dsros_sensors (passed at STARTUP as a system plugin)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
-add_library(dsros_sensors ${SENSORS_SRCS})
-target_link_libraries(dsros_sensors ds_sim_gazebo_msgs ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_sensors ds_sim_gazebo_msgs)
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
+#add_library(dsros_sensors ${SENSORS_SRCS})
+#target_link_libraries(dsros_sensors ds_sim_gazebo_msgs ${GAZEBO_LIBRARIES})
+#add_dependencies(dsros_sensors ds_sim_gazebo_msgs)
 
 # dsros_ros_depth
-add_library(dsros_ros_depth src/dsros_depth_plugin.cc src/dsros_depth_plugin.hh)
-target_link_libraries(dsros_ros_depth dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_ros_depth ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_library(dsros_ros_depth src/dsros_depth_plugin.cc src/dsros_depth_plugin.hh)
+#target_link_libraries(dsros_ros_depth dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+#add_dependencies(dsros_ros_depth ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # dsros_ros_ins
-add_library(dsros_ros_ins src/dsros_ins_plugin.cc src/dsros_ins_plugin.hh)
-target_link_libraries(dsros_ros_ins dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_ros_ins ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_library(dsros_ros_ins src/dsros_ins_plugin.cc src/dsros_ins_plugin.hh)
+#target_link_libraries(dsros_ros_ins dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+#add_dependencies(dsros_ros_ins ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # DVL plugin
-add_library(dsros_ros_dvl src/dsros_dvl_plugin.cc src/dsros_dvl_plugin.hh)
-target_link_libraries(dsros_ros_dvl dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_ros_dvl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_library(dsros_ros_dvl src/dsros_dvl_plugin.cc src/dsros_dvl_plugin.hh)
+#target_link_libraries(dsros_ros_dvl dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+#add_dependencies(dsros_ros_dvl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # GPS plugin
-add_library(dsros_ros_gps src/dsros_gps_plugin.cc src/dsros_gps_plugin.hh)
-target_link_libraries(dsros_ros_gps ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_ros_gps ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_library(dsros_ros_gps src/dsros_gps_plugin.cc src/dsros_gps_plugin.hh)
+#target_link_libraries(dsros_ros_gps ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+#add_dependencies(dsros_ros_gps ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # Reson plugin
-add_library(dsros_ros_reson src/dsros_reson_plugin.cc src/dsros_reson_plugin.hh)
-target_link_libraries(dsros_ros_reson ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_ros_reson ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_library(dsros_ros_reson src/dsros_reson_plugin.cc src/dsros_reson_plugin.hh)
+#target_link_libraries(dsros_ros_reson ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+#add_dependencies(dsros_ros_reson ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # Drag / buoyancy plugin
-add_library(dsros_hydro gazebo_src/dsros_hydro.cc gazebo_src/dsros_hydro.hh)
-target_link_libraries(dsros_hydro ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_hydro ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_library(dsros_hydro gazebo_src/dsros_hydro.cc gazebo_src/dsros_hydro.hh)
+#target_link_libraries(dsros_hydro ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+#add_dependencies(dsros_hydro ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # Generic thruster plugin
-add_library(dsros_ros_thruster gazebo_src/dsros_thruster.cc gazebo_src/dsros_thruster.hh)
-target_link_libraries(dsros_ros_thruster ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_ros_thruster ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_library(dsros_ros_thruster gazebo_src/dsros_thruster.cc gazebo_src/dsros_thruster.hh)
+#target_link_libraries(dsros_ros_thruster ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+#add_dependencies(dsros_ros_thruster ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_library(dsros_spotlight gazebo_src/dsros_spotlight.cc gazebo_src/dsros_spotlight.h)
-target_link_libraries(dsros_spotlight ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_spotlight ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#add_library(dsros_spotlight gazebo_src/dsros_spotlight.cc gazebo_src/dsros_spotlight.h)
+#target_link_libraries(dsros_spotlight ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+#add_dependencies(dsros_spotlight ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 catkin_package(
   INCLUDE_DIRS include
