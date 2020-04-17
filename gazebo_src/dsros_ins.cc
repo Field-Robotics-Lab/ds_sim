@@ -63,7 +63,7 @@ void DsrosInsSensor::Load(const std::string &_worldName) {
     Sensor::Load(_worldName);
 
     // Load the parent link
-    physics::EntityPtr parentEntity = this->world->GetEntity(
+    physics::EntityPtr parentEntity = this->world->EntityByName(
                                                 this->ParentName());
     this->parentLink = boost::dynamic_pointer_cast<physics::Link>(parentEntity);
     if (! this->parentLink) {
@@ -80,7 +80,7 @@ void DsrosInsSensor::Load(const std::string &_worldName) {
 
 void DsrosInsSensor::Init() {
     Sensor::Init();
-    this->sphericalCoordinates = this->world->GetSphericalCoordinates();
+    this->sphericalCoordinates = this->world->SphericalCoords();
 }
 
 void DsrosInsSensor::Fini() {
@@ -111,24 +111,27 @@ bool DsrosInsSensor::UpdateImpl(const bool _force) {
     // Get the actual sensor values
 
    
-    ignition::math::Pose3d parentLinkPose = this->parentLink->GetWorldPose().Ign();
+    ignition::math::Pose3d parentLinkPose = this->parentLink->WorldPose();
     ignition::math::Pose3d insPose = this->pose + parentLinkPose;
 
     // angular velocity
     // TODO This doesn't do what we want it to
     ignition::math::Vector3<double> angular_velocity
-         = insPose.Rot().Inverse().RotateVector(this->parentLink->GetWorldAngularVel().Ign());
+         = insPose.Rot().Inverse().RotateVector(this->parentLink->WorldAngularVel());
 
     // linear velocity
     ignition::math::Vector3d linear_velocity = this->parentLink->
-                                    GetWorldLinearVel(this->pose.Pos(), this->pose.Rot()).Ign();
+                                    WorldLinearVel(this->pose.Pos(), this->pose.Rot());
 
     // linear acceleration
-    ignition::math::Vector3d gravity = this->world->GetPhysicsEngine()->GetGravity().Ign();
+    //ignition::math::Vector3d gravity = this->world->GetPhysicsEngine()->GetGravity().Ign();
+    ignition::math::Vector3d gravity = this->world->Gravity();
     //ignition::math::Vector3d linear_accel = this->parentLink->GetWorldLinearAccel().Ign();
     //ignition::math::Vector3d angular_accel = this->parentLink->GetWorldAngularAccel().Ign();
-    ignition::math::Vector3d linear_accel = this->parentLink->GetRelativeLinearAccel().Ign();
-    ignition::math::Vector3d angular_accel = this->parentLink->GetRelativeAngularAccel().Ign();
+    //ignition::math::Vector3d linear_accel = this->parentLink->GetRelativeLinearAccel().Ign();
+    ignition::math::Vector3d linear_accel = this->parentLink->RelativeLinearAccel();
+    //ignition::math::Vector3d angular_accel = this->parentLink->GetRelativeAngularAccel().Ign();
+    ignition::math::Vector3d angular_accel = this->parentLink->RelativeAngularAccel();
     // lever-arm offset
     linear_accel += angular_accel.Cross(this->pose.Pos());
     // TODO: There should probably be a centripital acceleration term or something?
@@ -145,7 +148,7 @@ bool DsrosInsSensor::UpdateImpl(const bool _force) {
     lat = spherical.X();
 
     // fill in the message
-    msgs::Set(this->msg.mutable_stamp(), this->world->GetSimTime());
+    msgs::Set(this->msg.mutable_stamp(), this->world->SimTime());
     this->msg.set_entity_name(this->Name());
     this->msg.set_roll_deg(insPose.Rot().Roll());
     this->msg.set_pitch_deg(insPose.Rot().Pitch());

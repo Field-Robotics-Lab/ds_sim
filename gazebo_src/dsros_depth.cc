@@ -65,7 +65,7 @@ void DsrosDepthSensor::Load(const std::string &_worldName) {
     Sensor::Load(_worldName);
 
     // Load the parent link
-    physics::EntityPtr parentEntity = this->world->GetEntity(
+    physics::EntityPtr parentEntity = this->world->EntityByName(
                                                 this->ParentName());
     this->parentLink = boost::dynamic_pointer_cast<physics::Link>(parentEntity);
     if (! this->parentLink) {
@@ -84,7 +84,7 @@ void DsrosDepthSensor::Load(const std::string &_worldName) {
 
 void DsrosDepthSensor::Init() {
     Sensor::Init();
-    this->sphericalCoordinates = this->world->GetSphericalCoordinates();
+    this->sphericalCoordinates = this->world->SphericalCoords();
 }
 
 void DsrosDepthSensor::Fini() {
@@ -135,7 +135,7 @@ bool DsrosDepthSensor::UpdateImpl(const bool _force) {
 
     // Get the actual depth
     double raw_depth;
-    ignition::math::Pose3d depthPose = this->pose + this->parentLink->GetWorldPose().Ign();
+    ignition::math::Pose3d depthPose = this->pose + this->parentLink->WorldPose();
 
     raw_depth = -depthPose.Pos().Z();
 
@@ -160,7 +160,7 @@ bool DsrosDepthSensor::UpdateImpl(const bool _force) {
     //      <<" ERR: " <<depth - raw_depth <<" LAT: " <<lat <<" PRESS: " << press <<"\n";
 
     // fill in the message
-    msgs::Set(this->msg.mutable_stamp(), this->world->GetSimTime());
+    msgs::Set(this->msg.mutable_stamp(), this->world->SimTime());
     this->msg.set_depth(depth);
     this->msg.set_pressure_dbar(press);
     this->msg.set_latitude_deg(lat);

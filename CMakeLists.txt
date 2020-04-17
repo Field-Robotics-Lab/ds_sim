@@ -84,29 +84,29 @@ set(SENSORS_SRCS
 
 # dsros_sensors (passed at STARTUP as a system plugin)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
-#add_library(dsros_sensors ${SENSORS_SRCS})
-#target_link_libraries(dsros_sensors ds_sim_gazebo_msgs ${GAZEBO_LIBRARIES})
-#add_dependencies(dsros_sensors ds_sim_gazebo_msgs)
+add_library(dsros_sensors ${SENSORS_SRCS})
+target_link_libraries(dsros_sensors ds_sim_gazebo_msgs ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_sensors ds_sim_gazebo_msgs)
 
 # dsros_ros_depth
-#add_library(dsros_ros_depth src/dsros_depth_plugin.cc src/dsros_depth_plugin.hh)
-#target_link_libraries(dsros_ros_depth dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-#add_dependencies(dsros_ros_depth ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_library(dsros_ros_depth src/dsros_depth_plugin.cc src/dsros_depth_plugin.hh)
+target_link_libraries(dsros_ros_depth dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_ros_depth ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # dsros_ros_ins
-#add_library(dsros_ros_ins src/dsros_ins_plugin.cc src/dsros_ins_plugin.hh)
-#target_link_libraries(dsros_ros_ins dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-#add_dependencies(dsros_ros_ins ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_library(dsros_ros_ins src/dsros_ins_plugin.cc src/dsros_ins_plugin.hh)
+target_link_libraries(dsros_ros_ins dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_ros_ins ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # DVL plugin
-#add_library(dsros_ros_dvl src/dsros_dvl_plugin.cc src/dsros_dvl_plugin.hh)
-#target_link_libraries(dsros_ros_dvl dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-#add_dependencies(dsros_ros_dvl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_library(dsros_ros_dvl src/dsros_dvl_plugin.cc src/dsros_dvl_plugin.hh)
+target_link_libraries(dsros_ros_dvl dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_ros_dvl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # GPS plugin
-#add_library(dsros_ros_gps src/dsros_gps_plugin.cc src/dsros_gps_plugin.hh)
-#target_link_libraries(dsros_ros_gps ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-#add_dependencies(dsros_ros_gps ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_library(dsros_ros_gps src/dsros_gps_plugin.cc src/dsros_gps_plugin.hh)
+target_link_libraries(dsros_ros_gps ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_ros_gps ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # Reson plugin
 add_library(dsros_ros_reson src/dsros_reson_plugin.cc src/dsros_reson_plugin.hh)
