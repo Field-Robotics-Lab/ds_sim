@@ -83,7 +83,7 @@ set(SENSORS_SRCS
     gazebo_src/dsros_sensors.cc)
 
 # dsros_sensors (passed at STARTUP as a system plugin)
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 #add_library(dsros_sensors ${SENSORS_SRCS})
 #target_link_libraries(dsros_sensors ds_sim_gazebo_msgs ${GAZEBO_LIBRARIES})
 #add_dependencies(dsros_sensors ds_sim_gazebo_msgs)
@@ -109,9 +109,9 @@ set(SENSORS_SRCS
 #add_dependencies(dsros_ros_gps ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # Reson plugin
-#add_library(dsros_ros_reson src/dsros_reson_plugin.cc src/dsros_reson_plugin.hh)
-#target_link_libraries(dsros_ros_reson ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-#add_dependencies(dsros_ros_reson ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_library(dsros_ros_reson src/dsros_reson_plugin.cc src/dsros_reson_plugin.hh)
+target_link_libraries(dsros_ros_reson ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_ros_reson ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # Drag / buoyancy plugin
 #add_library(dsros_hydro gazebo_src/dsros_hydro.cc gazebo_src/dsros_hydro.hh)
