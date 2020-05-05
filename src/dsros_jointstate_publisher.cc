@@ -39,8 +39,11 @@
 
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
-//#include <gazebo/common/common.hh>
+#if GAZEBO_MAJOR_VERSION > 7
 #include <gazebo/common/CommonIface.hh>
+#else
+#include <gazebo/common/common.hh>
+#endif
 
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
@@ -55,12 +58,15 @@ namespace gazebo {
 class DsJointStatePublisher : public ModelPlugin {
   public:
     virtual ~DsJointStatePublisher() {
-        if (updateConnection) {
-	  // Melodic API change
-	  // Deprecation: public: void Events::Disconnect.*(ConnectionPtr);
-	  // Replacement: Delete the Connection object, perhaps by calling reset() on its smart pointer.
-	  //gazebo::event::Events::DisconnectWorldUpdateBegin(this->updateConnection);
-	  this->updateConnection.reset();
+       if (updateConnection) {
+#if GAZEBO_MAJOR_VERSION > 7
+      // Melodic API change
+      // Deprecation: public: void Events::Disconnect.*(ConnectionPtr);
+      // Replacement: Delete the Connection object, perhaps by calling reset() on its smart pointer.
+      this->updateConnection.reset();
+#else
+      gazebo::event::Events::DisconnectWorldUpdateBegin(this->updateConnection);
+#endif
         }
 
         if (rosNode) {
@@ -155,14 +161,23 @@ class DsJointStatePublisher : public ModelPlugin {
 
             // check if the joint should be ignored
             if (joint->HasType(gazebo::physics::Base::EntityType::FIXED_JOINT)
+#if GAZEBO_MAJOR_VERSION > 7
                 || joint->DOF() > 1
                 || joint->LowerLimit(0) == 0 && joint->UpperLimit(0) == 0) {
+#else
+                || joint->AngleCount() > 1
+                || joint->GetLowerLimit(0).Radian() == 0 && joint->GetUpperLimit(0).Radian() == 0) {
+#endif
                 // ignore this joint
                 jointState.position[i] = 0;
                 jointState.velocity[i] = 0;
                 jointState.effort[i] = 0;
             } else {
+#if GAZEBO_MAJOR_VERSION > 7
                 jointState.position[i] = sign*joint->Position(0);
+#else
+                jointState.position[i] = sign*joint->GetAngle(0).Radian();
+#endif
                 jointState.velocity[i] = joint->GetVelocity(0);
                 jointState.effort[i] = joint->GetForce(0);
             }

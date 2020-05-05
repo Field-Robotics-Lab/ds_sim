@@ -61,13 +61,21 @@ void dsrosRosGpsSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
     // Gazebo's Spherical Coordinates conversion is b0rk3n.  We have to do our own.
     // Start by grabbing the origin
     auto world = gazebo::physics::get_world(sensor->WorldName());
+#if GAZEBO_MAJOR_VERSION > 7
     auto spherical = world->SphericalCoords();
+#else
+  auto spherical = world->GetSphericalCoords();
+#endif
     lat_origin_rad = spherical->LatitudeReference().Radian();
     lat_origin = spherical->LatitudeReference().Degree();
     lon_origin = spherical->LongitudeReference().Degree();
     gzmsg <<"ORIGIN: " <<lat_origin <<", " <<lon_origin <<std::endl;
 
+#if GAZEBO_MAJOR_VERSION > 7
     physics::EntityPtr parentEntity = world->EntityByName(sensor->ParentName());
+#else
+    physics::EntityPtr parentEntity = world->GetEntity(sensor->ParentName());
+#endif
     parent_link = boost::dynamic_pointer_cast<gazebo::physics::Link>(parentEntity);
 
   if (!LoadParameters()) {
@@ -99,16 +107,20 @@ void dsrosRosGpsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
     if(publisher.getNumSubscribers() > 0) {
 
 
-      // update our raw data
+        // update our raw data
         data_time = sensor->LastMeasurementTime();
         entity_name = frame_name;
         // Gazebo is ENU.  Unless you use the Spherical Coordinates module, then it's screwy
+#if GAZEBO_MAJOR_VERSION > 7
         ignition::math::Pose3d gpsPose = sensor->Pose() + parent_link->WorldPose();
+#else
+        ignition::math::Pose3d gpsPose = sensor->Pose() + parent_link->GetWorldPose().Ign();
+#endif
         double easting = gpsPose.Pos().X();
         double northing = gpsPose.Pos().Y();
         altitude  = sensor->Altitude();
 
-      double latrad = lat_origin_rad;
+        double latrad = lat_origin_rad;
         // use the mdeglat/mdeglon stuff from dslpp
         double dx = 111415.13 * cos(latrad) - 94.55 * cos(3.0*latrad)
             		+ 0.12 * cos(5.0*latrad);

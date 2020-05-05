@@ -63,9 +63,12 @@ void DsrosInsSensor::Load(const std::string &_worldName) {
     Sensor::Load(_worldName);
 
     // Load the parent link
-    physics::EntityPtr parentEntity = this->world->EntityByName(
-                                                this->ParentName());
-    this->parentLink = boost::dynamic_pointer_cast<physics::Link>(parentEntity);
+#if GAZEBO_MAJOR_VERSION > 7
+    physics::EntityPtr parentEntity = this->world->EntityByName(this->ParentName());
+#else
+  physics::EntityPtr parentEntity = this->world->GetEntity(this->ParentName());
+#endif
+  this->parentLink = boost::dynamic_pointer_cast<physics::Link>(parentEntity);
     if (! this->parentLink) {
         gzerr <<"Sensor " <<this->Name() <<" could not find parent link!" <<std::endl;
         if (parentEntity) {
@@ -80,7 +83,11 @@ void DsrosInsSensor::Load(const std::string &_worldName) {
 
 void DsrosInsSensor::Init() {
     Sensor::Init();
+#if GAZEBO_MAJOR_VERSION > 7
     this->sphericalCoordinates = this->world->SphericalCoords();
+#else
+  this->sphericalCoordinates = this->world->GetSphericalCoords();
+#endif
 }
 
 void DsrosInsSensor::Fini() {
@@ -110,28 +117,44 @@ bool DsrosInsSensor::UpdateImpl(const bool _force) {
 
     // Get the actual sensor values
 
-   
+
+#if GAZEBO_MAJOR_VERSION > 7
     ignition::math::Pose3d parentLinkPose = this->parentLink->WorldPose();
+#else
+  ignition::math::Pose3d parentLinkPose = this->parentLink->GetWorldPose().Ign();
+#endif
     ignition::math::Pose3d insPose = this->pose + parentLinkPose;
 
     // angular velocity
     // TODO This doesn't do what we want it to
+#if GAZEBO_MAJOR_VERSION > 7
     ignition::math::Vector3<double> angular_velocity
-         = insPose.Rot().Inverse().RotateVector(this->parentLink->WorldAngularVel());
+        = insPose.Rot().Inverse().RotateVector(this->parentLink->WorldAngularVel());
+#else
+    ignition::math::Vector3<double> angular_velocity
+        = insPose.Rot().Inverse().RotateVector(this->parentLink->GetWorldAngularVel().Ign());
+#endif
 
     // linear velocity
+#if GAZEBO_MAJOR_VERSION > 7
     ignition::math::Vector3d linear_velocity = this->parentLink->
                                     WorldLinearVel(this->pose.Pos(), this->pose.Rot());
+#else
+    ignition::math::Vector3d linear_velocity = this->parentLink->
+      GetWorldLinearVel(this->pose.Pos(), this->pose.Rot()).Ign();
+#endif
 
-    // linear acceleration
-    //ignition::math::Vector3d gravity = this->world->GetPhysicsEngine()->GetGravity().Ign();
+  // linear acceleration
+#if GAZEBO_MAJOR_VERSION > 7
     ignition::math::Vector3d gravity = this->world->Gravity();
-    //ignition::math::Vector3d linear_accel = this->parentLink->GetWorldLinearAccel().Ign();
-    //ignition::math::Vector3d angular_accel = this->parentLink->GetWorldAngularAccel().Ign();
-    //ignition::math::Vector3d linear_accel = this->parentLink->GetRelativeLinearAccel().Ign();
     ignition::math::Vector3d linear_accel = this->parentLink->RelativeLinearAccel();
-    //ignition::math::Vector3d angular_accel = this->parentLink->GetRelativeAngularAccel().Ign();
     ignition::math::Vector3d angular_accel = this->parentLink->RelativeAngularAccel();
+#else
+    ignition::math::Vector3d gravity = this->world->GetPhysicsEngine()->GetGravity().Ign();
+    ignition::math::Vector3d linear_accel = this->parentLink->GetRelativeLinearAccel().Ign();
+    ignition::math::Vector3d angular_accel = this->parentLink->GetRelativeAngularAccel().Ign();
+#endif
+
     // lever-arm offset
     linear_accel += angular_accel.Cross(this->pose.Pos());
     // TODO: There should probably be a centripital acceleration term or something?
@@ -148,8 +171,12 @@ bool DsrosInsSensor::UpdateImpl(const bool _force) {
     lat = spherical.X();
 
     // fill in the message
+#if GAZEBO_MAJOR_VERSION > 7
     msgs::Set(this->msg.mutable_stamp(), this->world->SimTime());
-    this->msg.set_entity_name(this->Name());
+#else
+  msgs::Set(this->msg.mutable_stamp(), this->world->GetSimTime());
+#endif
+  this->msg.set_entity_name(this->Name());
     this->msg.set_roll_deg(insPose.Rot().Roll());
     this->msg.set_pitch_deg(insPose.Rot().Pitch());
     this->msg.set_heading_deg(insPose.Rot().Yaw());

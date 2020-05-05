@@ -231,25 +231,21 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         size_t NUM_PTS_PER_BEAM = 1000;
         rng.ranges.resize(sensor->NumBeams());
         for (size_t j=0; j<sensor->NumBeams(); j++) {
-            ignition::math::Pose3d beamPose = sensor->GetBeamPose(j);
-	    ignition::math::Vector3d vec;
-	    vec.X() = 0;
-	    vec.Y() = 0;
-	    vec.Z() = ranges[j];
-	    ignition::math::Vector3d beam = beamPose.Rot().RotateVector(vec) + beamPose.Pos();
-	    rng.ranges[j].range.point.x = beam.X();
-	    rng.ranges[j].range.point.y = beam.Y();
-	    rng.ranges[j].range.point.z = beam.Z();
-	    if (sensor->BeamValid(j)) {
-          rng.ranges[j].range_validity = ds_sensor_msgs::Range3D::RANGE_VALID;
-          rng.ranges[j].range_quality = 250;
-        } else {
-          rng.ranges[j].range_validity = ds_sensor_msgs::Range3D::RANGE_INDETERMINANT;
-          rng.ranges[j].range_quality = 10;
-        }
-	    rng.ranges[j].range.header.frame_id = frame_name;
-	    rng.ranges[j].range.header.stamp.sec = current_time.sec;
-	    rng.ranges[j].range.header.stamp.nsec = current_time.nsec;
+            // correctly report ranges in the instrument frame
+            ignition::math::Vector3d beamUnit = sensor->GetBeamUnitVec(j);
+      	    rng.ranges[j].range.point.x = ranges[j]*beamUnit.X();
+      	    rng.ranges[j].range.point.y = ranges[j]*beamUnit.Y();
+      	    rng.ranges[j].range.point.z = ranges[j]*beamUnit.Z();
+      	    if (sensor->BeamValid(j)) {
+                rng.ranges[j].range_validity = ds_sensor_msgs::Range3D::RANGE_VALID;
+                rng.ranges[j].range_quality = 250;
+            } else {
+                rng.ranges[j].range_validity = ds_sensor_msgs::Range3D::RANGE_INDETERMINANT;
+                rng.ranges[j].range_quality = 10;
+            }
+    	      rng.ranges[j].range.header.frame_id = frame_name;
+	          rng.ranges[j].range.header.stamp.sec = current_time.sec;
+      	    rng.ranges[j].range.header.stamp.nsec = current_time.nsec;
         }
         // publish data
         rng_publisher.publish(rng);
