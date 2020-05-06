@@ -64,7 +64,7 @@ void dsrosRosGpsSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
 #if GAZEBO_MAJOR_VERSION > 7
     auto spherical = world->SphericalCoords();
 #else
-  auto spherical = world->GetSphericalCoords();
+  auto spherical = world->GetSphericalCoordinates();
 #endif
     lat_origin_rad = spherical->LatitudeReference().Radian();
     lat_origin = spherical->LatitudeReference().Degree();

@@ -165,7 +165,7 @@ class DsJointStatePublisher : public ModelPlugin {
                 || joint->DOF() > 1
                 || joint->LowerLimit(0) == 0 && joint->UpperLimit(0) == 0) {
 #else
-                || joint->AngleCount() > 1
+                || joint->GetAngleCount() > 1
                 || joint->GetLowerLimit(0).Radian() == 0 && joint->GetUpperLimit(0).Radian() == 0) {
 #endif
                 // ignore this joint

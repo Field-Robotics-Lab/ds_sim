@@ -29,7 +29,7 @@ void DsrosHydro::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
 #if GAZEBO_MAJOR_VERSION > 7
   buoy_center_com = loadVector(buoy->GetElement("center")) - body_link->GetInertial()->CoG();
 #else
-  buoy_center_com = loadVector(buoy->GetElement("center")) - body_link->GetInertial()->GetCoG();
+  buoy_center_com = loadVector(buoy->GetElement("center")) - body_link->GetInertial()->GetCoG().Ign();
 #endif
 
   if (buoy->HasElement("scale_factor")) {
@@ -53,7 +53,7 @@ void DsrosHydro::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
 #if GAZEBO_MAJOR_VERSION > 7
   grav_center_body = body_link->GetInertial()->CoG();
 #else
-  grav_center_body = body_link->GetInertial()->GetCoG();
+  grav_center_body = body_link->GetInertial()->GetCoG().Ign();
 #endif
 
   gzmsg <<"   Buoy Center: " <<buoy_center_com <<std::endl;
@@ -87,7 +87,7 @@ void DsrosHydro::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
 #if GAZEBO_MAJOR_VERSION > 7
     drag_center_body = body_link->GetInertial()->CoG();
 #else
-    drag_center_body = body_link->GetInertial()->GetCoG();
+    drag_center_body = body_link->GetInertial()->GetCoG().Ign();
 #endif
   } else {
     drag_center_body = loadVector(drag->GetElement("center"));
@@ -288,7 +288,7 @@ void DsrosHydro::OnUpdate(const common::UpdateInfo& _info) {
   ignition::math::Vector3d vel_lin = body_link->RelativeLinearVel();
   ignition::math::Vector3d vel_ang = body_link->RelativeAngularVel();
 #else
-  ignition::math::Vector3d vel_lin = body_link->GetRelativeLinearVel().Ign()
+  ignition::math::Vector3d vel_lin = body_link->GetRelativeLinearVel().Ign();
   ignition::math::Vector3d vel_ang = body_link->GetRelativeAngularVel().Ign();
 #endif
 
@@ -299,13 +299,8 @@ void DsrosHydro::OnUpdate(const common::UpdateInfo& _info) {
   body_link->AddRelativeTorque(-drag_lin_torque);
 
   // quadratic drag is much harder
-#if GAZEBO_MAJOR_VERSION > 7
   ignition::math::Vector3d absvel_lin = vel_lin.Abs();
   ignition::math::Vector3d absvel_ang = vel_ang.Abs();
-#else
-  ignition::math::Vector3d absvel_lin = vel_lin.GetAbs().Ign();
-  ignition::math::Vector3d absvel_ang = vel_ang.GetAbs().Ign();
-#endif
 
   // this matrix library is officially the WORST
   std::array<double, 3> tmp_quad_force;

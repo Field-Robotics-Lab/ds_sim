@@ -90,7 +90,7 @@ void DsrosDepthSensor::Init() {
 #if GAZEBO_MAJOR_VERSION > 7
     this->sphericalCoordinates = this->world->SphericalCoords();
 #else
-  this->sphericalCoordinates = this->world->GetSphericalCoords();
+  this->sphericalCoordinates = this->world->GetSphericalCoordinates();
 #endif
 }
 
