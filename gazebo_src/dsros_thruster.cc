@@ -133,7 +133,11 @@ void DsrosThruster::OnCmdUpdate(const ds_actuator_msgs::ThrusterCmd& cmd) {
   if (body_link) {
     // flipping commands at the driver only affects reported outputs
     command = cmd.cmd_value;
+#if GAZEBO_MAJOR_VERSION > 7
+    command_timeout = body_link->GetWorld()->SimTime() + common::Time(cmd.ttl_seconds);
+#else
     command_timeout = body_link->GetWorld()->GetSimTime() + common::Time(cmd.ttl_seconds);
+#endif
   } else {
     command = 0;
     gzmsg <<"No model for thruster yet, forcing time to zero...\n";
@@ -156,7 +160,11 @@ void DsrosThruster::OnUpdate(const common::UpdateInfo& _info) {
   }
 
   // Get our velocity in the direction of the thruster
+#if GAZEBO_MAJOR_VERSION > 7
+  ignition::math::Vector3d body_vel = body_link->RelativeLinearVel();
+#else
   ignition::math::Vector3d body_vel = body_link->GetRelativeLinearVel().Ign();
+#endif
   // we'll ignore the kinematic effects of rotation
   // In general, its NOT OK to do that.  But if rotation is a large component of our
   // apparant thruster velocity, then there's all sorts of other unmodelled effects
