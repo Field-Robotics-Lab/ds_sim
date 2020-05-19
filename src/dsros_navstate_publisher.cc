@@ -31,11 +31,17 @@
 // Created by ivaughn on 2/2/18.
 //
 
+// REV: MELODIC 1 0
+
 #include <thread>
 
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
+#if GAZEBO_MAJOR_VERSION > 7
+#include <gazebo/common/CommonIface.hh>
+#else
 #include <gazebo/common/common.hh>
+#endif
 
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
@@ -51,7 +57,14 @@ class DsNavStatePublisher : public ModelPlugin {
  public:
   virtual ~DsNavStatePublisher() {
     if (updateConnection) {
+#if GAZEBO_MAJOR_VERSION > 7
+      // Melodic API change
+      // Deprecation: public: void Events::Disconnect.*(ConnectionPtr);
+      // Replacement: Delete the Connection object, perhaps by calling reset() on its smart pointer.
+      this->updateConnection.reset();
+#else
       gazebo::event::Events::DisconnectWorldUpdateBegin(this->updateConnection);
+#endif
     }
 
     if (rosNode) {
@@ -165,11 +178,16 @@ class DsNavStatePublisher : public ModelPlugin {
 
     // NOW!
     ros::Time now = ros::Time::now();
-    math::Pose vehPose = model->GetWorldPose();
-    math::Vector3 vehWorldVel = model->GetWorldLinearVel();
-    math::Vector3 vehAngVel = model->GetWorldAngularVel();
-    // recover body-frame velocities
-    math::Vector3 vehLinVel = vehPose.rot.RotateVectorReverse(vehWorldVel);
+#if GAZEBO_MAJOR_VERSION > 7
+    ignition::math::Pose3d vehPose = model->WorldPose();
+    ignition::math::Vector3d vehWorldVel = model->WorldLinearVel();
+    ignition::math::Vector3d vehAngVel = model->WorldAngularVel();
+#else
+    ignition::math::Pose3d vehPose = model->GetWorldPose().Ign();
+    ignition::math::Vector3d vehWorldVel = model->GetWorldLinearVel().Ign();
+    ignition::math::Vector3d vehAngVel = model->GetWorldAngularVel().Ign();
+#endif
+    ignition::math::Vector3d vehLinVel = vehPose.Rot().RotateVectorReverse(vehWorldVel);
 
     // publish a navigation state message
     ds_nav_msgs::AggregatedState state_msg;
@@ -180,36 +198,36 @@ class DsNavStatePublisher : public ModelPlugin {
 
     // convert to NED
     state_msg.northing.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
-    state_msg.northing.value = vehPose.pos.y;
     state_msg.easting.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
-    state_msg.easting.value = vehPose.pos.x;
     state_msg.down.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
-    state_msg.down.value = -vehPose.pos.z;
+    state_msg.northing.value = vehPose.Pos().Y();
+    state_msg.easting.value = vehPose.Pos().X();
+    state_msg.down.value = -vehPose.Pos().Z();
 
     // convert yaw -> heading
     state_msg.roll.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
-    state_msg.roll.value = vehPose.rot.GetRoll();
     state_msg.pitch.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
-    state_msg.pitch.value = -vehPose.rot.GetPitch();
     state_msg.heading.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
-    state_msg.heading.value = M_PI/2 - vehPose.rot.GetYaw();
+    state_msg.roll.value = vehPose.Rot().Roll();
+    state_msg.pitch.value = -vehPose.Rot().Pitch();
+    state_msg.heading.value = M_PI/2 - vehPose.Rot().Yaw();
 
     // convert to fwd/stbd/down
     state_msg.surge_u.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
-    state_msg.surge_u.value = vehLinVel.x;
     state_msg.sway_v.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
-    state_msg.sway_v.value = -vehLinVel.y;
     state_msg.heave_w.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
-    state_msg.heave_w.value = -vehLinVel.z;
+    state_msg.surge_u.value = vehLinVel.X();
+    state_msg.sway_v.value = -vehLinVel.Y();
+    state_msg.heave_w.value = -vehLinVel.Z();
 
     // convert yaw -> heading
     // Not exactly sure which rotation axes gazebo uses
     state_msg.p.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
-    state_msg.p.value = vehAngVel.x;
     state_msg.q.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
-    state_msg.q.value = -vehAngVel.y;
     state_msg.r.valid = ds_nav_msgs::FlaggedDouble::VALUE_VALID;
-    state_msg.r.value = -vehAngVel.z;
+    state_msg.p.value = vehAngVel.X();
+    state_msg.q.value = -vehAngVel.Y();
+    state_msg.r.value = -vehAngVel.Z();
 
     if (enable_navstate_broadcast) {
       navstatePub.publish(state_msg);
@@ -219,20 +237,20 @@ class DsNavStatePublisher : public ModelPlugin {
     geometry_msgs::PoseStamped pose_msg;
     pose_msg.header.stamp = now;
     pose_msg.header.frame_id = frame_id;
-    pose_msg.pose.position.x = vehPose.pos.x;
-    pose_msg.pose.position.y = vehPose.pos.y;
-    pose_msg.pose.position.z = vehPose.pos.z;
-    pose_msg.pose.orientation.x = vehPose.rot.x;
-    pose_msg.pose.orientation.y = vehPose.rot.y;
-    pose_msg.pose.orientation.z = vehPose.rot.z;
-    pose_msg.pose.orientation.w = vehPose.rot.w;
+    pose_msg.pose.position.x = vehPose.Pos().X();
+    pose_msg.pose.position.y = vehPose.Pos().Y();
+    pose_msg.pose.position.z = vehPose.Pos().Z();
+    pose_msg.pose.orientation.x = vehPose.Rot().X();
+    pose_msg.pose.orientation.y = vehPose.Rot().Y();
+    pose_msg.pose.orientation.z = vehPose.Rot().Z();
+    pose_msg.pose.orientation.w = vehPose.Rot().W();
 
     posePub.publish(pose_msg);
 
     // publish a TF
     tf::Transform tform;
-    tform.setOrigin(tf::Vector3(vehPose.pos.x, vehPose.pos.y, vehPose.pos.z));
-    tform.setRotation(tf::Quaternion(vehPose.rot.x, vehPose.rot.y, vehPose.rot.z, vehPose.rot.w));
+    tform.setOrigin(tf::Vector3(vehPose.Pos().X(), vehPose.Pos().Y(), vehPose.Pos().Z()));
+    tform.setRotation(tf::Quaternion(vehPose.Rot().X(), vehPose.Rot().Y(), vehPose.Rot().Z(), vehPose.Rot().W()));
     if (enable_tf_broadcast) {
       tform_broadcaster.sendTransform(tf::StampedTransform(tform, now, frame_id, base_link_name));
     } else {

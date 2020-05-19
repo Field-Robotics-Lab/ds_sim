@@ -136,25 +136,37 @@ void DsrosDvlBeam::Update(const physics::WorldPtr& world,
     // (possibly) update the contact cache
     if (entityName != contactEntityName) {
         contactEntityName = entityName;
+#if GAZEBO_MAJOR_VERSION > 7
+        contactEntityPtr = world->EntityByName(entityName);
+#else
         contactEntityPtr = world->GetEntity(entityName);
+#endif
     }
 
-    // get velocities
-    if (contactEntityPtr.get() != NULL) {
-        // Compute the intersection in world coordinates
-        ignition::math::Vector3d intersection = inst2world.Rot().RotateVector(contactRange * beamUnitVector) + inst2world.Pos();
-        
-        // Compute the velocity of the point of impact in world coordinates
-        ignition::math::Vector3d entityVel = contactEntityPtr->GetWorldLinearVel().Ign()
-            + contactEntityPtr->GetWorldAngularVel().Ign().Cross(
-                    contactEntityPtr->GetWorldPose().pos.Ign() - intersection);
-        //gzdbg <<"ENTITY: " <<entityVel.X() <<", " <<entityVel.Y() <<", " <<entityVel.Z() <<"\n";
+  // get velocities
+  if (contactEntityPtr.get() != NULL) {
+#if GAZEBO_MAJOR_VERSION > 7
+      ignition::math::Vector3d contactWorldPos = contactEntityPtr->WorldPose().Pos();
+      ignition::math::Vector3d contactLinearVel = contactEntityPtr->WorldLinearVel();
+      ignition::math::Vector3d contactAngularVel = contactEntityPtr->WorldAngularVel();
+#else
+      ignition::math::Vector3d contactWorldPos = contactEntityPtr->GetWorldPose().pos.Ign();
+      ignition::math::Vector3d contactLinearVel = contactEntityPtr->GetWorldLinearVel().Ign();
+      ignition::math::Vector3d contactAngularVel = contactEntityPtr->GetWorldAngularVel().Ign();
+#endif
 
-        //gzdbg <<"intersection: " <<intersection.X() <<","  <<intersection.Y() <<","  <<intersection.Z() <<"\n";
-        ignition::math::Vector3d inst_rel_vel = inst2world.Rot().RotateVectorReverse(sensorVel - entityVel);
-        //gzdbg <<"\tinst_relative vel: " <<inst_rel_vel.X() <<","  <<inst_rel_vel.Y() <<","  <<inst_rel_vel.Z() <<"\n";
-        //gzmsg <<"\tunit vector: " <<beamUnitVector.X() <<"," <<beamUnitVector.Y() <<"," <<beamUnitVector.Z() <<"\n";
-        beamVelocity = beamUnitVector.Dot(inst_rel_vel);
+      // Compute the intersection in world coordinates
+      ignition::math::Vector3d intersection = inst2world.Rot().RotateVector(contactRange * beamUnitVector) + inst2world.Pos();
+        
+      // Compute the velocity of the point of impact in world coordinates
+      ignition::math::Vector3d entityVel = contactLinearVel + contactAngularVel.Cross(contactWorldPos - intersection);
+      //gzdbg <<"ENTITY: " <<entityVel.X() <<", " <<entityVel.Y() <<", " <<entityVel.Z() <<"\n";
+
+      //gzdbg <<"intersection: " <<intersection.X() <<","  <<intersection.Y() <<","  <<intersection.Z() <<"\n";
+      ignition::math::Vector3d inst_rel_vel = inst2world.Rot().RotateVectorReverse(sensorVel - entityVel);
+      //gzdbg <<"\tinst_relative vel: " <<inst_rel_vel.X() <<","  <<inst_rel_vel.Y() <<","  <<inst_rel_vel.Z() <<"\n";
+      //gzmsg <<"\tunit vector: " <<beamUnitVector.X() <<"," <<beamUnitVector.Y() <<"," <<beamUnitVector.Z() <<"\n";
+      beamVelocity = beamUnitVector.Dot(inst_rel_vel);
     } else {
         gzdbg <<"NULL contact entity!";
     }
@@ -176,9 +188,12 @@ void DsrosDvlSensor::Load(const std::string &_worldName) {
     Sensor::Load(_worldName);
 
     // Load the parent link
-    physics::EntityPtr parentEntity = this->world->GetEntity(
-                                                this->ParentName());
-    this->parentLink = boost::dynamic_pointer_cast<physics::Link>(parentEntity);
+#if GAZEBO_MAJOR_VERSION > 7
+    physics::EntityPtr parentEntity = this->world->EntityByName(this->ParentName());
+#else
+  physics::EntityPtr parentEntity = this->world->GetEntity(this->ParentName());
+#endif
+  this->parentLink = boost::dynamic_pointer_cast<physics::Link>(parentEntity);
     if (! this->parentLink) {
         gzdbg <<"Sensor " <<this->Name() <<" could not find parent link!" <<std::endl;
         if (parentEntity) {
@@ -228,7 +243,12 @@ void DsrosDvlSensor::Load(const std::string &_worldName) {
     this->dvlPub = this->node->Advertise<ds_sim::msgs::Dvl>(this->topicName, 50);
 
     // Setup physics!
-    physics::PhysicsEnginePtr physicsEngine = this->world->GetPhysicsEngine();
+    physics::PhysicsEnginePtr physicsEngine;
+#if GAZEBO_MAJOR_VERSION > 7
+    physicsEngine = this->world->Physics();
+#else
+    physicsEngine = this->world->GetPhysicsEngine();
+#endif
     GZ_ASSERT(physicsEngine != NULL, "Unable to get pointer to physics engine");
 
     // rotate 
@@ -351,17 +371,29 @@ bool DsrosDvlSensor::UpdateImpl(const bool _force) {
     }
 
     // Acquire a mutex to avoid a race condition
+#if GAZEBO_MAJOR_VERSION > 7
     boost::recursive_mutex::scoped_lock engine_lock(*(
-        this->world->GetPhysicsEngine()->GetPhysicsUpdateMutex()));
+        this->world->Physics()->GetPhysicsUpdateMutex()));
+#else
+  boost::recursive_mutex::scoped_lock engine_lock(*(
+      this->world->GetPhysicsEngine()->GetPhysicsUpdateMutex()));
+#endif
 
     std::lock_guard<std::mutex> lock(this->mutex);
 
     // update each beam
-    ignition::math::Pose3d vehPose = this->parentLink->GetWorldPose().Ign();
-    ignition::math::Vector3d bodyLinearVel = this->parentLink->GetWorldLinearVel().Ign();
-    ignition::math::Vector3d bodyAngularVel = this->parentLink->GetWorldAngularVel().Ign();
-    ignition::math::Vector3d sensorVel = bodyLinearVel + vehPose.Rot().RotateVector(bodyAngularVel.Cross(this->pose.Pos()));
-    ignition::math::Pose3d sensorPose = this->pose + this->parentLink->GetWorldPose().Ign();
+#if GAZEBO_MAJOR_VERSION > 7
+    ignition::math::Pose3d vehPose = this->parentLink->WorldPose();
+    ignition::math::Vector3d bodyLinearVel = this->parentLink->WorldLinearVel();
+    ignition::math::Vector3d bodyAngularVel = this->parentLink->WorldAngularVel();
+    ignition::math::Pose3d sensorPose = this->pose + this->parentLink->WorldPose();
+#else
+  ignition::math::Pose3d vehPose = this->parentLink->GetWorldPose().Ign();
+  ignition::math::Vector3d bodyLinearVel = this->parentLink->GetWorldLinearVel().Ign();
+  ignition::math::Vector3d bodyAngularVel = this->parentLink->GetWorldAngularVel().Ign();
+  ignition::math::Pose3d sensorPose = this->pose + this->parentLink->GetWorldPose().Ign();
+#endif
+  ignition::math::Vector3d sensorVel = bodyLinearVel + vehPose.Rot().RotateVector(bodyAngularVel.Cross(this->pose.Pos()));
 
     // Compute a solution for all beams
     int valid_beams = 0;
@@ -407,7 +439,11 @@ bool DsrosDvlSensor::UpdateImpl(const bool _force) {
     }
 
     // fill in the message
+#if GAZEBO_MAJOR_VERSION > 7
+    msgs::Set(this->msg.mutable_stamp(), this->world->SimTime());
+#else
     msgs::Set(this->msg.mutable_stamp(), this->world->GetSimTime());
+#endif
     msgs::Set(this->msg.mutable_linear_velocity(), linear_velocity);
     this->msg.set_num_beams(valid_beams);
     for (size_t i=0; i<msg.ranges_size(); i++) {

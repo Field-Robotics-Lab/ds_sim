@@ -65,8 +65,11 @@ void DsrosDepthSensor::Load(const std::string &_worldName) {
     Sensor::Load(_worldName);
 
     // Load the parent link
-    physics::EntityPtr parentEntity = this->world->GetEntity(
-                                                this->ParentName());
+#if GAZEBO_MAJOR_VERSION > 7
+    physics::EntityPtr parentEntity = this->world->EntityByName(this->ParentName());
+#else
+  physics::EntityPtr parentEntity = this->world->GetEntity(this->ParentName());
+#endif
     this->parentLink = boost::dynamic_pointer_cast<physics::Link>(parentEntity);
     if (! this->parentLink) {
         gzdbg <<"Sensor " <<this->Name() <<" could not find parent link!" <<std::endl;
@@ -84,7 +87,11 @@ void DsrosDepthSensor::Load(const std::string &_worldName) {
 
 void DsrosDepthSensor::Init() {
     Sensor::Init();
-    this->sphericalCoordinates = this->world->GetSphericalCoordinates();
+#if GAZEBO_MAJOR_VERSION > 7
+    this->sphericalCoordinates = this->world->SphericalCoords();
+#else
+  this->sphericalCoordinates = this->world->GetSphericalCoordinates();
+#endif
 }
 
 void DsrosDepthSensor::Fini() {
@@ -135,7 +142,11 @@ bool DsrosDepthSensor::UpdateImpl(const bool _force) {
 
     // Get the actual depth
     double raw_depth;
+#if GAZEBO_MAJOR_VERSION > 7
+    ignition::math::Pose3d depthPose = this->pose + this->parentLink->WorldPose();
+#else
     ignition::math::Pose3d depthPose = this->pose + this->parentLink->GetWorldPose().Ign();
+#endif
 
     raw_depth = -depthPose.Pos().Z();
 
@@ -160,7 +171,11 @@ bool DsrosDepthSensor::UpdateImpl(const bool _force) {
     //      <<" ERR: " <<depth - raw_depth <<" LAT: " <<lat <<" PRESS: " << press <<"\n";
 
     // fill in the message
+#if GAZEBO_MAJOR_VERSION > 7
+    msgs::Set(this->msg.mutable_stamp(), this->world->SimTime());
+#else
     msgs::Set(this->msg.mutable_stamp(), this->world->GetSimTime());
+#endif
     this->msg.set_depth(depth);
     this->msg.set_pressure_dbar(press);
     this->msg.set_latitude_deg(lat);

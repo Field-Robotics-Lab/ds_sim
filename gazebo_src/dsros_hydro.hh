@@ -10,21 +10,20 @@
 #include <gazebo/gazebo.hh>
 #include <gazebo/physics/physics.hh>
 #include <gazebo/common/common.hh>
-#include <gazebo/math/gzmath.hh>
 
 // Damn you vile Gazebo
 struct Matrix6d {
   Matrix6d() {
-    m11 = gazebo::math::Matrix3::ZERO;
-    m12 = gazebo::math::Matrix3::ZERO;
-    m21 = gazebo::math::Matrix3::ZERO;
-    m22 = gazebo::math::Matrix3::ZERO;
+    m11 = ignition::math::Matrix3<double>::Zero;
+    m12 = ignition::math::Matrix3<double>::Zero;
+    m21 = ignition::math::Matrix3<double>::Zero;
+    m22 = ignition::math::Matrix3<double>::Zero;
   }
 
-  gazebo::math::Matrix3 m11;
-  gazebo::math::Matrix3 m12;
-  gazebo::math::Matrix3 m21;
-  gazebo::math::Matrix3 m22;
+  ignition::math::Matrix3<double> m11;
+  ignition::math::Matrix3<double> m12;
+  ignition::math::Matrix3<double> m21;
+  ignition::math::Matrix3<double> m22;
 };
 
 namespace gazebo {
@@ -42,16 +41,16 @@ class DsrosHydro : public ModelPlugin {
   gazebo::physics::LinkPtr body_link;
   gazebo::event::ConnectionPtr updateConnection;
 
-  math::Vector3 buoy_center_com; // center-of-mass relative
-  math::Vector3 buoy_force_world;
+  ignition::math::Vector3<double> buoy_center_com; // center-of-mass relative
+  ignition::math::Vector3<double> buoy_force_world;
   double buoy_all_buoyancy_depth; // depth at which we start losing bouyancy
   double buoy_no_buoyancy_depth; // depth at which the vehicle is fully out of the water
   double buoy_surface_scale; // scale factor to reduce oscillation
 
-  math::Vector3 grav_center_body;
-  math::Vector3 grav_force_world;
+  ignition::math::Vector3<double> grav_center_body;
+  ignition::math::Vector3<double> grav_force_world;
 
-  math::Vector3 drag_center_body; // center-of-mass relative
+  ignition::math::Vector3<double> drag_center_body; // center-of-mass relative
   Matrix6d drag_lin_coeff;
 
   // quadratic drag is a 6 x 6 x 6 tensor; see the modelling thing.
@@ -64,13 +63,13 @@ class DsrosHydro : public ModelPlugin {
   // The solution is to force acceleration to slowly ramp up.
   // We ALSO have to compute our own relative accelerations, because gazebo ALSO screws that up.
   double acc_alpha; // decay coefficient for filtering
-  math::Vector3 filt_acc_lin;
-  math::Vector3 filt_acc_ang;
-  math::Vector3 previous_relvel_lin;
-  math::Vector3 previous_relvel_ang;
+  ignition::math::Vector3<double> filt_acc_lin;
+  ignition::math::Vector3<double> filt_acc_ang;
+  ignition::math::Vector3<double> previous_relvel_lin;
+  ignition::math::Vector3<double> previous_relvel_ang;
   common::Time previous_time;
 
-  math::Vector3 loadVector(sdf::ElementPtr sdf);
+  ignition::math::Vector3<double> loadVector(sdf::ElementPtr sdf);
   Matrix6d loadMatrix(sdf::ElementPtr sdf);
   std::array<Matrix6d, 6> loadTensor(sdf::ElementPtr sdf);
 };
