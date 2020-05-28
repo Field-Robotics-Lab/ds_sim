@@ -73,7 +73,7 @@ void dsrosRosResonSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_)
 
     node = new ros::NodeHandle(this->robot_namespace);
 
-    reson_data_publisher = node->advertise<ds_multibeam_msgs::MultibeamRaw>(topic_name + "/raw_multibeam", 5);
+    reson_data_publisher = node->advertise<ds_multibeam_msgs::MultibeamRaw>(topic_name + "/mbraw", 5);
     pointcloud_publisher = node->advertise<sensor_msgs::PointCloud2>(topic_name + "/pointcloud", 10);
 
   // connect our UpdateChild function to get called whenever there's a world update event
