@@ -111,6 +111,7 @@ private:
   double update_rate;
   double gaussian_noise_vel;
   double gaussian_noise_range;
+  bool water_track_enabled;
 };
 
 }; // namespace gazebo

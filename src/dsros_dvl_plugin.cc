@@ -91,19 +91,26 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
 
     // add noise and recompute the velocity
     std::vector<double> ranges(4);
+    Eigen::VectorXd raw_beam_vel(4);
     Eigen::VectorXd beam_vel(4);
+    Eigen::VectorXd beam_wtr_vel(4);
     Eigen::MatrixXd beam_unit(4,3);
+    Eigen::MatrixXd beam_wtr_unit(4,3);
     Eigen::Vector3d velocity;
+    Eigen::Vector3d wtr_velocity;
     double speed = 0;
     double course = 0;
     double altitude = 0;
+    double wtr_speed = 0;
+    double wtr_course = 0;
     int fillIn = 0;
     for (size_t i=0; i<sensor->NumBeams(); i++) {
 
+        ignition::math::Vector3d beamUnit = sensor->GetBeamUnitVec(i);
         if (sensor->BeamValid(i)) {
-            ignition::math::Vector3d beamUnit = sensor->GetBeamUnitVec(i);
             ranges[i] = sensor->GetBeamRange(i) + GaussianKernel(0, gaussian_noise_range);
-            beam_vel(fillIn) = sensor->GetBeamVelocity(i) + GaussianKernel(0, gaussian_noise_vel);
+            raw_beam_vel(i) = sensor->GetBeamVelocity(i) + GaussianKernel(0, gaussian_noise_vel);
+            beam_vel(fillIn) = raw_beam_vel(i);
             beam_unit(fillIn, 0) = beamUnit.X();
             beam_unit(fillIn, 1) = beamUnit.Y();
             beam_unit(fillIn, 2) = beamUnit.Z();
@@ -112,7 +119,12 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         } else {
             ranges[i] = std::numeric_limits<double>::quiet_NaN();
         }
+        beam_wtr_vel(i) = sensor->GetBeamWaterVelocity(i) + GaussianKernel(0, gaussian_noise_vel);
+        beam_wtr_unit(i, 0) = beamUnit.X();
+        beam_wtr_unit(i, 1) = beamUnit.Y();
+        beam_wtr_unit(i, 2) = beamUnit.Z();
     }
+
     if (fillIn >= 3) {
         // trim the arrays
         beam_unit = beam_unit.topRows(fillIn);
@@ -130,8 +142,13 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
             course += 360.0;
         }
     }
-
-
+    // same method to compute a water track velocity based on the noisy beam water velocities
+    wtr_velocity = beam_wtr_unit.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beam_wtr_vel);
+    wtr_speed = sqrt(wtr_velocity(0)*wtr_velocity(0) + wtr_velocity(1)*wtr_velocity(1));
+    wtr_course = atan2(wtr_velocity(0), wtr_velocity(1)) * 180.0/M_PI;
+    if (wtr_course < 0) {
+        wtr_course += 360.0;
+    }
 
     if(dvl_data_publisher.getNumSubscribers() > 0) {
 
@@ -144,10 +161,21 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         msg.ds_header.io_time.sec = current_time.sec;
         msg.ds_header.io_time.nsec = current_time.nsec;
 
-        msg.velocity.x = velocity(0);
-        msg.velocity.y = velocity(1);
-        msg.velocity.z = velocity(2);
-
+        if ((fillIn >= 3) || (!water_track_enabled)) {
+            msg.velocity.x = velocity(0);
+            msg.velocity.y = velocity(1);
+            msg.velocity.z = velocity(2);
+            msg.course_gnd = course;
+            msg.speed_gnd = speed;
+            msg.velocity_mode = ds_sensor_msgs::Dvl::DVL_MODE_BOTTOM;
+        } else {
+            msg.velocity.x = wtr_velocity(0);
+            msg.velocity.y = wtr_velocity(1);
+            msg.velocity.z = wtr_velocity(2);
+            msg.course_gnd = wtr_course;
+            msg.speed_gnd = wtr_speed;
+            msg.velocity_mode = ds_sensor_msgs::Dvl::DVL_MODE_WATER;
+        }
         msg.velocity_covar[0] = gaussian_noise_vel*gaussian_noise_vel;
         msg.velocity_covar[1] = 0;
         msg.velocity_covar[2] = 0;
@@ -162,8 +190,6 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
 
         msg.num_good_beams = sensor->ValidBeams();
         msg.speed_sound = 1500.0;
-        msg.course_gnd = course;
-        msg.speed_gnd = speed;
         msg.altitude = altitude;
 
         for (size_t i=0; i<sensor->NumBeams(); i++) {
@@ -173,11 +199,16 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
             msg.beam_unit_vec[i].x = beamUnit.X();
             msg.beam_unit_vec[i].y = beamUnit.Y();
             msg.beam_unit_vec[i].z = beamUnit.Z();
+            if (fillIn >= 3) {
+                msg.raw_velocity[i] = raw_beam_vel(i);
+            } else {
+                msg.raw_velocity[i] = beam_wtr_vel(i);
+            }
+            msg.raw_velocity_covar[i] = gaussian_noise_vel*gaussian_noise_vel;
         }
 
         //ROS_INFO_STREAM("DVL_SENDING_INST: " <<velocity(0) <<" " <<velocity(1) <<" " <<velocity(2));
 
-        msg.velocity_mode = ds_sensor_msgs::Dvl::DVL_MODE_BOTTOM;
         msg.coordinate_mode = ds_sensor_msgs::Dvl::DVL_COORD_INSTRUMENT;
         msg.dvl_time = static_cast<double>(current_time.sec) + static_cast<double>(current_time.nsec)/1.0e9;
 
@@ -368,6 +399,18 @@ bool dsrosRosDvlSensor::LoadParameters() {
   {
     gaussian_noise_range = 0.0;
     ROS_WARN_STREAM("missing <gaussianNoiseBeamRange>, set to default: " << gaussian_noise_range);
+  }
+
+  //WATER TRACKING
+  if (sdf->HasElement("enableWaterTrack"))
+  {
+    water_track_enabled = sdf->Get<bool>("enableWaterTrack");
+    ROS_INFO_STREAM("<enableWaterTrack> set to: " << water_track_enabled);
+  }
+  else
+  {
+    water_track_enabled = false;
+    ROS_WARN_STREAM("missing <enableWaterTrack>, set to default: " << water_track_enabled);
   }
   return true;
 }

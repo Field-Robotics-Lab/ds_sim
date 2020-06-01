@@ -125,11 +125,15 @@ void DsrosDvlBeam::Update(const physics::WorldPtr& world,
     this->shape->GetIntersection(contactRange, entityName);
     contactRange += startRange; // have to add the initial range offset.  #bugfix.
 
+    // if no bottom return, use sensor velocity to estimate a water track velocity
+    // TODO: incorporate current?
+    ignition::math::Vector3d inst_wtr_vel = inst2world.Rot().RotateVectorReverse(sensorVel);
+    beamWaterVelocity = beamUnitVector.Dot(inst_wtr_vel);
+
     if (entityName.empty()) {
         contactEntityName = "";
         contactEntityPtr.reset();
         contactRange = -1;
-        beamVelocity = 0;
         return;
     }
 
@@ -216,7 +220,7 @@ void DsrosDvlSensor::Load(const std::string &_worldName) {
     }
 
     if (!dvlElem) {
-      gzerr <<"DVL sensor MUST have plugin with filename=libdsros_ros_dvl.so so we can get min/max range, etc\n";
+      //gzdbg <<"DVL sensor MUST have plugin with filename=libdsros_ros_dvl.so so we can get min/max range, etc\n";
       throw std::runtime_error("DVL Sensor MUST specify a plugin with parameters");
     }
 
@@ -230,6 +234,7 @@ void DsrosDvlSensor::Load(const std::string &_worldName) {
     this->beamAzimuth3  = dvlElem->Get<double>("beamAzimuthDeg3");
     this->beamAzimuth4  = dvlElem->Get<double>("beamAzimuthDeg4");
     this->pos_z_down = dvlElem->Get<bool>("pos_z_down");
+
     /*
     this->rangeMin = 1.0;
     this->rangeMax = 200;
@@ -360,6 +365,10 @@ double DsrosDvlSensor::GetBeamVelocity(int idx) const {
     return beams[idx].beamVelocity;
 }
 
+double DsrosDvlSensor::GetBeamWaterVelocity(int idx) const {
+    return beams[idx].beamWaterVelocity;
+}
+
 double DsrosDvlSensor::GetBeamRange(int idx) const {
     return beams[idx].contactRange;
 }
@@ -400,6 +409,8 @@ bool DsrosDvlSensor::UpdateImpl(const bool _force) {
     int basis_fill_in = 0;
     Eigen::Matrix<double, Eigen::Dynamic, 3> beam_basis(4,3);
     Eigen::VectorXd beam_vel(4);
+    Eigen::Matrix<double, Eigen::Dynamic, 3> beam_wtr_basis(4,3);
+    Eigen::VectorXd beam_wtr_vel(4);
     for (size_t i=0; i<beams.size(); i++) {
         beams[i].Update(world, sensorVel, sensorPose);
         //msg <<beams[i].contactRange <<"/" <<beams[i].beamVelocity <<"  ";
@@ -411,6 +422,12 @@ bool DsrosDvlSensor::UpdateImpl(const bool _force) {
             beam_vel(basis_fill_in) = beams[i].beamVelocity;
             basis_fill_in++;
         }
+        // compute in water track values even if no bottom return
+        beam_wtr_basis(i,0) = beams[i].beamUnitVector.X();
+        beam_wtr_basis(i,1) = beams[i].beamUnitVector.Y();
+        beam_wtr_basis(i,2) = beams[i].beamUnitVector.Z();
+        beam_wtr_vel(i) = beams[i].beamWaterVelocity;
+        gzerr << "beam[" << i << "] vel: " << beams[i].beamVelocity <<", wtr vel: " <<beams[i].beamWaterVelocity <<"\n";
     }
     //gzdbg <<msg.str() <<" valid: " <<valid_beams <<"\n";
 
@@ -433,6 +450,21 @@ bool DsrosDvlSensor::UpdateImpl(const bool _force) {
         ignition::math::Vector3d stefVel = sensorPose.Rot().RotateVector(linear_velocity);
         ignition::math::Vector3d bodyVel = vehPose.Rot().RotateVectorReverse(bodyLinearVel);
 
+        //gzdbg <<" comp. vel: (" <<inst_vel(0) <<"," <<inst_vel(1) <<"," <<inst_vel(2) <<")\n"
+        //      <<" orig. vel: (" <<bodyVel.X() <<"," <<bodyVel.Y() <<"," <<bodyVel.Z() <<")\n"
+        //      <<" stef. vel: (" <<stefVel.X() <<"," <<stefVel.Y() <<"," <<stefVel.Z() <<")\n";
+    } else {
+        // same approach for a water track solution, but use the beamWaterVelocity values
+        // assumes all beams are "valid" as far as the water track solution goes
+        Eigen::MatrixXd H(beam_wtr_basis);
+        Eigen::Vector3d inst_vel = H.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beam_wtr_vel);
+
+        linear_velocity.X( inst_vel(0) );
+        linear_velocity.Y( inst_vel(1) );
+        linear_velocity.Z( inst_vel(2) );
+
+        ignition::math::Vector3d stefVel = sensorPose.Rot().RotateVector(linear_velocity);
+        ignition::math::Vector3d bodyVel = vehPose.Rot().RotateVectorReverse(bodyLinearVel);
         //gzdbg <<" comp. vel: (" <<inst_vel(0) <<"," <<inst_vel(1) <<"," <<inst_vel(2) <<")\n"
         //      <<" orig. vel: (" <<bodyVel.X() <<"," <<bodyVel.Y() <<"," <<bodyVel.Z() <<")\n"
         //      <<" stef. vel: (" <<stefVel.X() <<"," <<stefVel.Y() <<"," <<stefVel.Z() <<")\n";
