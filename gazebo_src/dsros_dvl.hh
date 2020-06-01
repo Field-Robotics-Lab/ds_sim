@@ -89,6 +89,7 @@ namespace sensors {
         double contactRange;
         double startRange;
         double beamVelocity;
+        double beamWaterVelocity;
         ignition::math::Vector3d beamUnitVector; // in body coordinates
 
         bool isValid() const;
@@ -117,6 +118,7 @@ namespace sensors {
     public: ignition::math::Vector3d GetBeamUnitVec(int idx) const;
     public: bool BeamValid(int idx) const;
     public: double GetBeamVelocity(int idx) const;
+    public: double GetBeamWaterVelocity(int idx) const;
     public: double GetBeamRange(int idx) const;
 
     public: double RangeMin() const;
