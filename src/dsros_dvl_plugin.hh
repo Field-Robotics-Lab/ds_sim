@@ -110,6 +110,7 @@ private:
   unsigned int seed;
   double update_rate;
   double gaussian_noise_vel;
+  double gaussian_noise_wtr_vel;
   double gaussian_noise_range;
   bool water_track_enabled;
 };
