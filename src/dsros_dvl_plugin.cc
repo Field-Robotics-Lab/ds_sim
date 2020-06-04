@@ -119,7 +119,7 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         } else {
             ranges[i] = std::numeric_limits<double>::quiet_NaN();
         }
-        beam_wtr_vel(i) = sensor->GetBeamWaterVelocity(i) + GaussianKernel(0, gaussian_noise_vel);
+        beam_wtr_vel(i) = sensor->GetBeamWaterVelocity(i) + GaussianKernel(0, gaussian_noise_wtr_vel);
         beam_wtr_unit(i, 0) = beamUnit.X();
         beam_wtr_unit(i, 1) = beamUnit.Y();
         beam_wtr_unit(i, 2) = beamUnit.Z();
@@ -168,6 +168,17 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
             msg.course_gnd = course;
             msg.speed_gnd = speed;
             msg.velocity_mode = ds_sensor_msgs::Dvl::DVL_MODE_BOTTOM;
+            msg.velocity_covar[0] = gaussian_noise_vel*gaussian_noise_vel;
+            msg.velocity_covar[1] = 0;
+            msg.velocity_covar[2] = 0;
+
+            msg.velocity_covar[3] = 0;
+            msg.velocity_covar[4] = gaussian_noise_vel*gaussian_noise_vel;
+            msg.velocity_covar[5] = 0;
+
+            msg.velocity_covar[6] = 0;
+            msg.velocity_covar[7] = 0;
+            msg.velocity_covar[8] = gaussian_noise_vel*gaussian_noise_vel;
         } else {
             msg.velocity.x = wtr_velocity(0);
             msg.velocity.y = wtr_velocity(1);
@@ -175,19 +186,18 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
             msg.course_gnd = wtr_course;
             msg.speed_gnd = wtr_speed;
             msg.velocity_mode = ds_sensor_msgs::Dvl::DVL_MODE_WATER;
+            msg.velocity_covar[0] = gaussian_noise_wtr_vel*gaussian_noise_wtr_vel;
+            msg.velocity_covar[1] = 0;
+            msg.velocity_covar[2] = 0;
+
+            msg.velocity_covar[3] = 0;
+            msg.velocity_covar[4] = gaussian_noise_wtr_vel*gaussian_noise_wtr_vel;
+            msg.velocity_covar[5] = 0;
+
+            msg.velocity_covar[6] = 0;
+            msg.velocity_covar[7] = 0;
+            msg.velocity_covar[8] = gaussian_noise_wtr_vel*gaussian_noise_wtr_vel;
         }
-        msg.velocity_covar[0] = gaussian_noise_vel*gaussian_noise_vel;
-        msg.velocity_covar[1] = 0;
-        msg.velocity_covar[2] = 0;
-
-        msg.velocity_covar[3] = 0;
-        msg.velocity_covar[4] = gaussian_noise_vel*gaussian_noise_vel;
-        msg.velocity_covar[5] = 0;
-
-        msg.velocity_covar[6] = 0;
-        msg.velocity_covar[7] = 0;
-        msg.velocity_covar[8] = gaussian_noise_vel*gaussian_noise_vel;
-
         msg.num_good_beams = sensor->ValidBeams();
         msg.speed_sound = 1500.0;
         msg.altitude = altitude;
@@ -201,10 +211,11 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
             msg.beam_unit_vec[i].z = beamUnit.Z();
             if (fillIn >= 3) {
                 msg.raw_velocity[i] = raw_beam_vel(i);
+                msg.raw_velocity_covar[i] = gaussian_noise_vel*gaussian_noise_vel;
             } else {
                 msg.raw_velocity[i] = beam_wtr_vel(i);
+                msg.raw_velocity_covar[i] = gaussian_noise_wtr_vel*gaussian_noise_wtr_vel;
             }
-            msg.raw_velocity_covar[i] = gaussian_noise_vel*gaussian_noise_vel;
         }
 
         //ROS_INFO_STREAM("DVL_SENDING_INST: " <<velocity(0) <<" " <<velocity(1) <<" " <<velocity(2));
@@ -388,6 +399,17 @@ bool dsrosRosDvlSensor::LoadParameters() {
   {
     gaussian_noise_vel = 0.0;
     ROS_WARN_STREAM("missing <gaussianNoiseBeamVel>, set to default: " << gaussian_noise_vel);
+  }
+
+  if (sdf->HasElement("gaussianNoiseBeamWtrVel"))
+  {
+    gaussian_noise_wtr_vel =  sdf->Get<double>("gaussianNoiseBeamWtrVel");
+    ROS_INFO_STREAM("<gaussianNoiseBeamWtrVel> set to: " << gaussian_noise_wtr_vel);
+  }
+  else
+  {
+    gaussian_noise_wtr_vel = 2.0 * gaussian_noise_vel;
+    ROS_WARN_STREAM("missing <gaussianNoiseBeamWtrVel>, set to default: " << gaussian_noise_wtr_vel);
   }
 
   if (sdf->HasElement("gaussianNoiseBeamRange"))
