@@ -116,6 +116,7 @@ bool DsrosDvlBeam::isValid() const {
 
 void DsrosDvlBeam::Update(const physics::WorldPtr& world, 
                           const ignition::math::Vector3d& sensorVel, 
+                          const ignition::math::Vector3d& sensorWtrVel,
                           const ignition::math::Pose3d& inst2world) {
 
     
@@ -125,9 +126,8 @@ void DsrosDvlBeam::Update(const physics::WorldPtr& world,
     this->shape->GetIntersection(contactRange, entityName);
     contactRange += startRange; // have to add the initial range offset.  #bugfix.
 
-    // if no bottom return, use sensor velocity to estimate a water track velocity
-    // TODO: incorporate current?
-    ignition::math::Vector3d inst_wtr_vel = inst2world.Rot().RotateVectorReverse(sensorVel);
+    // if no bottom return, use sensor water velocity to compute the beam's water track velocity
+    ignition::math::Vector3d inst_wtr_vel = inst2world.Rot().RotateVectorReverse(sensorWtrVel);
     beamWaterVelocity = beamUnitVector.Dot(inst_wtr_vel);
 
     if (entityName.empty()) {
@@ -278,6 +278,11 @@ void DsrosDvlSensor::Load(const std::string &_worldName) {
 
     beamPose.Set(0,0,0, 0, (start-DTOR*(this->beamAngle)), this->beamAzimuth4*DTOR);
     beams.push_back(DsrosDvlBeam(physicsEngine, this, 4, this->pose, beamPose));
+
+    // setup the ocean current subscription
+    this->currentTopicName = this->GetOceanCurrentTopic();
+    this->currentSub = this->node->Subscribe(this->currentTopicName, 
+                                             &DsrosDvlSensor::OnOceanCurrent, this);
 }
 
 void DsrosDvlSensor::Init() {
@@ -297,6 +302,20 @@ std::string DsrosDvlSensor::GetTopic() const {
         topicName += '/' + this->sdf->Get<std::string>("topic");
     } else {
         topicName += "/dvl";
+    }
+
+    boost::replace_all(topicName, "::", "/");
+
+    return topicName;
+}
+
+std::string DsrosDvlSensor::GetOceanCurrentTopic() const {
+    std::string topicName = "";
+
+    if (this->sdf->HasElement("ocean_current_topic")) {
+        topicName += this->sdf->Get<std::string>("ocean_current_topic");
+    } else {
+        topicName += "hydrodynamics/current_velocity";
     }
 
     boost::replace_all(topicName, "::", "/");
@@ -373,6 +392,13 @@ double DsrosDvlSensor::GetBeamRange(int idx) const {
     return beams[idx].contactRange;
 }
 
+void DsrosDvlSensor::OnOceanCurrent(ConstVector3dPtr &_msg) {
+    this->oceanCurrent.X() = _msg->x();
+    this->oceanCurrent.Y() = _msg->y();
+    this->oceanCurrent.Z() = _msg->z();
+    //gzmsg << "Update ocean current to " << this->oceanCurrent << "\n";
+}
+
 bool DsrosDvlSensor::UpdateImpl(const bool _force) {
 
     if (!this->parentLink) {
@@ -394,15 +420,18 @@ bool DsrosDvlSensor::UpdateImpl(const bool _force) {
 #if GAZEBO_MAJOR_VERSION > 7
     ignition::math::Pose3d vehPose = this->parentLink->WorldPose();
     ignition::math::Vector3d bodyLinearVel = this->parentLink->WorldLinearVel();
+    ignition::math::Vector3d bodyWaterLinearVel = this->parentLink->WorldLinearVel() - this->oceanCurrent;
     ignition::math::Vector3d bodyAngularVel = this->parentLink->WorldAngularVel();
     ignition::math::Pose3d sensorPose = this->pose + this->parentLink->WorldPose();
 #else
   ignition::math::Pose3d vehPose = this->parentLink->GetWorldPose().Ign();
   ignition::math::Vector3d bodyLinearVel = this->parentLink->GetWorldLinearVel().Ign();
+  ignition::math::Vector3d bodyWaterLinearVel = this->parentLink->GetWorldLinearVel().Ign() - this->oceanCurrent;
   ignition::math::Vector3d bodyAngularVel = this->parentLink->GetWorldAngularVel().Ign();
   ignition::math::Pose3d sensorPose = this->pose + this->parentLink->GetWorldPose().Ign();
 #endif
   ignition::math::Vector3d sensorVel = bodyLinearVel + vehPose.Rot().RotateVector(bodyAngularVel.Cross(this->pose.Pos()));
+  ignition::math::Vector3d sensorWaterVel = bodyWaterLinearVel + vehPose.Rot().RotateVector(bodyAngularVel.Cross(this->pose.Pos()));
 
     // Compute a solution for all beams
     int valid_beams = 0;
@@ -412,7 +441,7 @@ bool DsrosDvlSensor::UpdateImpl(const bool _force) {
     Eigen::Matrix<double, Eigen::Dynamic, 3> beam_wtr_basis(4,3);
     Eigen::VectorXd beam_wtr_vel(4);
     for (size_t i=0; i<beams.size(); i++) {
-        beams[i].Update(world, sensorVel, sensorPose);
+        beams[i].Update(world, sensorVel, sensorWaterVel, sensorPose);
         //msg <<beams[i].contactRange <<"/" <<beams[i].beamVelocity <<"  ";
         if (beams[i].isValid()) {
             valid_beams++;
@@ -427,7 +456,7 @@ bool DsrosDvlSensor::UpdateImpl(const bool _force) {
         beam_wtr_basis(i,1) = beams[i].beamUnitVector.Y();
         beam_wtr_basis(i,2) = beams[i].beamUnitVector.Z();
         beam_wtr_vel(i) = beams[i].beamWaterVelocity;
-        gzerr << "beam[" << i << "] vel: " << beams[i].beamVelocity <<", wtr vel: " <<beams[i].beamWaterVelocity <<"\n";
+        //gzdbg << "beam[" << i << "] vel: " << beams[i].beamVelocity <<", wtr vel: " <<beams[i].beamWaterVelocity <<"\n";
     }
     //gzdbg <<msg.str() <<" valid: " <<valid_beams <<"\n";
 
@@ -464,7 +493,7 @@ bool DsrosDvlSensor::UpdateImpl(const bool _force) {
         linear_velocity.Z( inst_vel(2) );
 
         ignition::math::Vector3d stefVel = sensorPose.Rot().RotateVector(linear_velocity);
-        ignition::math::Vector3d bodyVel = vehPose.Rot().RotateVectorReverse(bodyLinearVel);
+        ignition::math::Vector3d bodyVel = vehPose.Rot().RotateVectorReverse(bodyWaterLinearVel);
         //gzdbg <<" comp. vel: (" <<inst_vel(0) <<"," <<inst_vel(1) <<"," <<inst_vel(2) <<")\n"
         //      <<" orig. vel: (" <<bodyVel.X() <<"," <<bodyVel.Y() <<"," <<bodyVel.Z() <<")\n"
         //      <<" stef. vel: (" <<stefVel.X() <<"," <<stefVel.Y() <<"," <<stefVel.Z() <<")\n";
