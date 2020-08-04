@@ -76,6 +76,7 @@ namespace sensors {
                 
 
         void Update(const physics::WorldPtr& world, const ignition::math::Vector3d& sensorVel,
+                                                    const ignition::math::Vector3d& sensorWtrVel,
                                                     const ignition::math::Pose3d& inst2world);
         physics::CollisionPtr collision;
         physics::RayShapePtr shape;
@@ -107,6 +108,8 @@ namespace sensors {
 
     public: virtual std::string GetTopic() const;
 
+    public: virtual std::string GetOceanCurrentTopic() const;
+
     public: virtual void Init();
 
     public: virtual void Fini();
@@ -132,6 +135,7 @@ namespace sensors {
 
     public: friend class DsrosDvlBeam;
     protected: virtual bool UpdateImpl(const bool _force);
+    protected: void OnOceanCurrent(ConstVector3dPtr &_msg);
 
     protected:
         physics::LinkPtr parentLink;
@@ -161,6 +165,10 @@ namespace sensors {
         physics::MeshShapePtr beamShape;
         transport::SubscriberPtr contactSub;
 
+        // Ocean current subscription (if it's being published)
+        std::string currentTopicName;
+        transport::SubscriberPtr currentSub;
+        ignition::math::Vector3d oceanCurrent;
   }; // class declaration
 }; // namespace sensors
 }; // namespace gazebo
