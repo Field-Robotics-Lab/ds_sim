@@ -74,11 +74,30 @@ void dsrosRosDvlSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
     node = new ros::NodeHandle(this->robot_namespace);
 
     dvl_data_publisher = node->advertise<ds_sensor_msgs::Dvl>(topic_name, 1);
-    rng_publisher = node->advertise<ds_sensor_msgs::Ranges3D>(ranges_topic_name, 1);
+    pt_data_publisher  = node->advertise<sensor_msgs::PointCloud>(topic_name + "_cloud", 1);
+    current_profile_publisher = node->advertise<ds_sensor_msgs::Adcp>(topic_name + "_current", 1);
     pt_data_publisher  = node->advertise<sensor_msgs::PointCloud>(topic_name + "_cloud", 1);
     connection = gazebo::event::Events::ConnectWorldUpdateBegin(
                 boost::bind(&dsrosRosDvlSensor::UpdateChild, this, _1));
     last_time = sensor->LastUpdateTime();
+
+    // Initialize data members and the Adcp message for current profiling
+    current_profile_cell_depth = (sensor->RangeMax() - sensor->RangeMin()) / water_track_bins;
+    current_profile_bin0_distance = sensor->RangeMin() + current_profile_cell_depth / 2.0;
+    for (int beam = 0; beam < 4; beam++)
+    {
+        ignition::math::Vector3d unit_vec = sensor->GetBeamUnitVec(beam);
+        adcp.beam_unit_vec[beam].x = unit_vec.X();
+        adcp.beam_unit_vec[beam].y = unit_vec.Y();
+        adcp.beam_unit_vec[beam].z = unit_vec.Z();
+    } // for (int beam = 0;...
+    adcp.vel_bin_beams.resize(water_track_bins);
+    for (int bin = 0; bin < water_track_bins; bin++)
+    {
+        adcp.vel_bin_beams[bin].velocity_bin_beam.resize(4);
+//        adcp.vel_bin_beams[bin].bin_intensity.resize(4);     // Commented out in msg def for now
+//        adcp.vel_bin_beams[bin].bin_correlation.resize(4);   // Commented out in msg def for now
+    } // for (int bin = 0;...
 }
 
 void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
@@ -227,6 +246,57 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         dvl_data_publisher.publish(msg);
         ros::spinOnce();
     }
+
+    if ((current_profile_publisher.getNumSubscribers() > 0) && 
+        (water_track_enabled)) {  // No current profile if water track unavailable
+        // prepare message header
+        adcp.header.frame_id = frame_name;
+        adcp.header.stamp.sec = current_time.sec;
+        adcp.header.stamp.nsec = current_time.nsec;
+        adcp.header.seq++;
+
+        msg.ds_header.io_time.sec = current_time.sec;
+        msg.ds_header.io_time.nsec = current_time.nsec;
+
+        // Fill message-level fields
+        adcp.coordinate_mode = ds_sensor_msgs::Adcp::ADCP_COORD_BEAM;
+        adcp.adcp_type = ds_sensor_msgs::Adcp::ADCP_TYPE_PISTON;
+        adcp.cells = water_track_bins;
+        adcp.cell_depth = current_profile_cell_depth;
+        adcp.bin0_distance = current_profile_bin0_distance;
+
+        // Fill in beam-specific bin velocities as water velocity plus noise
+        // out to the beam's current range.  No solution (0.0) beyond that
+        // Note to self:  should these be negative (current vs sensor velocity)?
+        for (int bin = 0; bin < water_track_bins; bin ++)
+        {
+            double bin_range = current_profile_bin0_distance + 
+                               (current_profile_cell_depth / 2.0) +
+                               (current_profile_cell_depth * bin);
+
+            for (int beam = 0; beam < 4; beam++)
+            {
+                double beam_range = sensor->GetBeamRange(beam);
+                if ((beam_range >= bin_range) || (beam_range <= 0.0)) {
+                    ignition::math::Vector3d beamUnit = sensor->GetBeamUnitVec(beam);
+                    double beam_velocity = sensor->GetBeamWaterVelocity(beam) +
+                                           GaussianKernel(0, gaussian_noise_wtr_vel);
+                    adcp.vel_bin_beams[bin].velocity_bin_beam[beam].x = beam_velocity * beamUnit.X();
+                    adcp.vel_bin_beams[bin].velocity_bin_beam[beam].y = beam_velocity * beamUnit.Y();
+                    adcp.vel_bin_beams[bin].velocity_bin_beam[beam].z = beam_velocity * beamUnit.Z();
+                } // if (beam_range >=...
+                else {
+                    adcp.vel_bin_beams[bin].velocity_bin_beam[beam].x = 0.0;
+                    adcp.vel_bin_beams[bin].velocity_bin_beam[beam].y = 0.0;
+                    adcp.vel_bin_beams[bin].velocity_bin_beam[beam].z = 0.0;
+                } // else
+            } // for (int beam = 0;...
+        } // for (int bin = 0;...
+
+        current_profile_publisher.publish(adcp);
+        ros::spinOnce();
+    }
+
 
     if (pt_data_publisher.getNumSubscribers() > 0) {
         // prepare message header
@@ -434,5 +504,17 @@ bool dsrosRosDvlSensor::LoadParameters() {
     water_track_enabled = false;
     ROS_WARN_STREAM("missing <enableWaterTrack>, set to default: " << water_track_enabled);
   }
+
+  if (sdf->HasElement("waterTrackBins"))
+  {
+    water_track_bins = sdf->Get<int>("waterTrackBins");
+    ROS_INFO_STREAM("<waterTrackBins> set to: " << water_track_bins);
+  }
+  else
+  {
+    water_track_bins = 1;
+    ROS_WARN_STREAM("missing <waterTrackBins>, set to default: " << water_track_bins);
+  }
+
   return true;
 }
