@@ -45,6 +45,8 @@
 #include <sensor_msgs/PointCloud.h>
 #include <ds_sensor_msgs/Dvl.h>
 #include <ds_sensor_msgs/Ranges3D.h>
+#include <ds_sensor_msgs/Adcp.h>
+#include <ds_sensor_msgs/WaterCurrentProfile.h>
 #include <string>
 
 #include "../gazebo_src/dsros_dvl.hh"
@@ -81,8 +83,13 @@ private:
   /// \brief Depth publisher
   ros::Publisher dvl_data_publisher;
 
+  /// \brief current profile publisher
+  ros::Publisher current_profile_publisher;
+
   ds_sensor_msgs::Dvl msg;
   ds_sensor_msgs::Ranges3D rng;
+  ds_sensor_msgs::Adcp adcp;
+
 
   // temporary stuff to make sure we're point our beams correctly
   ros::Publisher pt_data_publisher;
@@ -113,6 +120,9 @@ private:
   double gaussian_noise_wtr_vel;
   double gaussian_noise_range;
   bool water_track_enabled;
+  int water_track_bins;
+  double current_profile_cell_depth;
+  double current_profile_bin0_distance;
 };
 
 }; // namespace gazebo
