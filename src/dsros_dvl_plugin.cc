@@ -267,7 +267,6 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
 
         // Fill in beam-specific bin velocities as water velocity plus noise
         // out to the beam's current range.  No solution (0.0) beyond that
-        // Note to self:  should these be negative (current vs sensor velocity)?
         for (int bin = 0; bin < water_track_bins; bin ++)
         {
             double bin_range = current_profile_bin0_distance + 
@@ -281,9 +280,9 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
                     ignition::math::Vector3d beamUnit = sensor->GetBeamUnitVec(beam);
                     double beam_velocity = sensor->GetBeamWaterVelocity(beam) +
                                            GaussianKernel(0, gaussian_noise_wtr_vel);
-                    adcp.vel_bin_beams[bin].velocity_bin_beam[beam].x = beam_velocity * beamUnit.X();
-                    adcp.vel_bin_beams[bin].velocity_bin_beam[beam].y = beam_velocity * beamUnit.Y();
-                    adcp.vel_bin_beams[bin].velocity_bin_beam[beam].z = beam_velocity * beamUnit.Z();
+                    adcp.vel_bin_beams[bin].velocity_bin_beam[beam].x = -beam_velocity * beamUnit.X();
+                    adcp.vel_bin_beams[bin].velocity_bin_beam[beam].y = -beam_velocity * beamUnit.Y();
+                    adcp.vel_bin_beams[bin].velocity_bin_beam[beam].z = -beam_velocity * beamUnit.Z();
                 } // if (beam_range >=...
                 else {
                     adcp.vel_bin_beams[bin].velocity_bin_beam[beam].x = 0.0;
