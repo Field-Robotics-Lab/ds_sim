@@ -121,6 +121,7 @@ private:
   double gaussian_noise_range;
   bool water_track_enabled;
   int water_track_bins;
+  int current_profile_coord_mode;
   double current_profile_cell_depth;
   double current_profile_bin0_distance;
 };
