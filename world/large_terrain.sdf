@@ -10,7 +10,7 @@
             <geometry>
               <mesh>
                 <uri>file://resources/synthetic_terrain.dae</uri>
-                <scale>25600 25600 400</scale>
+                <scale>256000 256000 400</scale>
               </mesh>
             </geometry>
         </visual>
@@ -18,7 +18,7 @@
           <geometry>
             <mesh>
               <uri>file://resources/synthetic_terrain.dae</uri>
-              <scale>25600 25600 400</scale>
+              <scale>256000 256000 400</scale>
             </mesh>
           </geometry>
           <surface>
