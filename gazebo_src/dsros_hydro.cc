@@ -117,8 +117,34 @@ void DsrosHydro::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
            <<" does not specify added mass matrix!" <<std::endl;
   }
 
+  if (drag->HasElement("acceleration_alpha")) {
+    acc_alpha = drag->Get<double>("acceleration_alpha");
+    gzwarn <<"Loaded acceleration smoothing constant " <<acc_alpha <<std::endl;
+    // NOTE:
+    //
+    // Numerical issues can cause this to bounce around and become unstable.  The solution is to filter the added
+    // mass term to smooth it out.  The exact amount of filtering can depend on the constants involved.  The default is
+    // selected for reasonable drag values of around O(100-500) or so.  If you start getting larger values, more
+    // filtering more be required to keep the PDE stable.
+    //
+    // This is the same first-order lowpass filter that crops up all ove the place, except that the alpha value
+    // is the OPPOSITE of Dana's first-order trajectory.
+    //
+    // Basically, you can think of it as:
+    //    alpha = exp(-timeconstant)
+    // where timeconstant is defined as a number of simulation steps.
+    // Hence, the default value of 0.3 is slightly less than one timestep, as
+    // exp(-1) = 0.3679
+    //
+    // If, say, your added mass terms are in the 1000's, you can try a time constant of, say, about 3 simulation steps.
+    // Then exp(-3) = 0.0498 which is close enough to 0.05
+    //
+    // More smoothing introduces more lag, which isn't great for the simulation either.  But keep'in it real requires
+    // avoiding NaNs, and that requires numerical stability.
+  } else {
+    acc_alpha = 0.3;
+  }
   // initialize some stuff
-  acc_alpha = 0.3;
   filt_acc_lin = ignition::math::Vector3d::Zero;
   filt_acc_ang = ignition::math::Vector3d::Zero;
   previous_relvel_lin = ignition::math::Vector3d::Zero;
