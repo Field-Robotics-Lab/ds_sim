@@ -139,9 +139,13 @@ bool DsrosInsSensor::UpdateImpl(const bool _force) {
 #if GAZEBO_MAJOR_VERSION > 7
     ignition::math::Vector3d linear_velocity = this->parentLink->
                                     WorldLinearVel(this->pose.Pos(), this->pose.Rot());
+  ignition::math::Vector3d body_linear_velocity =
+      insPose.Rot().Inverse().RotateVector(linear_velocity);
 #else
-    ignition::math::Vector3d linear_velocity = this->parentLink->
+  ignition::math::Vector3d linear_velocity = this->parentLink->
       GetWorldLinearVel(this->pose.Pos(), this->pose.Rot()).Ign();
+    ignition::math::Vector3<double> body_linear_velocity
+        = insPose.Rot().Inverse().RotateVector(linear_velocity);
 #endif
 
   // linear acceleration
@@ -164,29 +168,32 @@ bool DsrosInsSensor::UpdateImpl(const bool _force) {
       linear_accel -= insPose.Rot().Inverse().RotateVector(gravity);
     }
 
-    // Get the latitude
-    double lat;
-
+    // Spherical coordinates are totally broken in some versions of gazebo.
     ignition::math::Vector3d spherical = this->sphericalCoordinates->SphericalFromLocal(insPose.Pos());
-    lat = spherical.X();
+    double lat, lon;
+    lon = spherical.X();
+    lat = spherical.Y();
 
     // fill in the message
 #if GAZEBO_MAJOR_VERSION > 7
     msgs::Set(this->msg.mutable_stamp(), this->world->SimTime());
 #else
-  msgs::Set(this->msg.mutable_stamp(), this->world->GetSimTime());
+    msgs::Set(this->msg.mutable_stamp(), this->world->GetSimTime());
 #endif
-  this->msg.set_entity_name(this->Name());
+    this->msg.set_entity_name(this->Name());
     this->msg.set_roll_deg(insPose.Rot().Roll());
     this->msg.set_pitch_deg(insPose.Rot().Pitch());
     this->msg.set_heading_deg(insPose.Rot().Yaw());
     msgs::Set(this->msg.mutable_orientation(), insPose.Rot());
+    msgs::Set(this->msg.mutable_position(), insPose.Pos());
     msgs::Set(this->msg.mutable_angular_velocity(), angular_velocity);
     msgs::Set(this->msg.mutable_linear_velocity(),  linear_velocity);
     msgs::Set(this->msg.mutable_linear_accel(),  linear_accel);
     this->msg.set_latitude_deg(lat);
+    this->msg.set_longitude_deg(lon);
+    this->msg.set_altitude(insPose.Pos().Z());
 
-    // Actually publish
+  // Actually publish
     if (this->insPub) {
         this->insPub->Publish(this->msg);
     }
@@ -209,6 +216,11 @@ ignition::math::Quaterniond DsrosInsSensor::GetOrientation() const {
     return msgs::ConvertIgn(this->msg.orientation());
 }
 
+ignition::math::Vector3d DsrosInsSensor::GetPosition() const {
+  std::lock_guard<std::mutex>(this->mutex);
+  return msgs::ConvertIgn(this->msg.position());
+}
+
 ignition::math::Vector3d DsrosInsSensor::GetAngularVelocity() const {
     std::lock_guard<std::mutex>(this->mutex);
     return msgs::ConvertIgn(this->msg.angular_velocity());
@@ -227,6 +239,16 @@ ignition::math::Vector3d DsrosInsSensor::GetLinearAcceleration() const {
 double DsrosInsSensor::GetLatitude() const {
     std::lock_guard<std::mutex>(this->mutex);
     return this->msg.latitude_deg();
+}
+
+double DsrosInsSensor::GetLongitude() const {
+  std::lock_guard<std::mutex>(this->mutex);
+  return this->msg.longitude_deg();
+}
+
+double DsrosInsSensor::GetAltitude() const {
+  std::lock_guard<std::mutex>(this->mutex);
+  return this->msg.altitude();
 }
 
 double DsrosInsSensor::GetRoll() const {

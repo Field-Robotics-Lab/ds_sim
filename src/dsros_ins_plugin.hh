@@ -123,19 +123,23 @@ private:
   unsigned int seed;
   double update_rate;
   double phinsbin_update_rate;
-  double noisePR, noiseY, noiseVel, noiseAngVel, noiseAcc, noiseLat;
+  double noisePR, noiseY, noiseVel, noiseAngVel, noiseAcc, noiseLat, noiseLon, noiseDep;
   bool use_gravity;
+
+  double lat_origin_rad, lat_origin, lon_origin;
 
   // actual core data
   common::Time data_time;
   std::string entity_name;
   ignition::math::Quaterniond world2ll;
   ignition::math::Quaterniond orientation;
+  ignition::math::Vector3d position;
   ignition::math::Vector3d angular_velocity;
   ignition::math::Vector3d linear_velocity;
+  ignition::math::Vector3d body_linear_velocity;
   ignition::math::Vector3d linear_accel;
   double pitch, roll, heading;
-  double latitude;
+  double latitude, longitude, altitude;
 };
 
 }; // namespace gazebo

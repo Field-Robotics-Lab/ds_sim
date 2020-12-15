@@ -31,6 +31,7 @@ POSSIBILITY OF SUCH DAMAGE.
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
 <xacro:include filename="$(find ds_sim)/urdf/phins_sim.xacro"/>
+<xacro:include filename="$(find ds_sim)/urdf/phinsins_sim.xacro"/>
 <xacro:include filename="$(find ds_sim)/urdf/paro_sim.xacro"/>
 <xacro:include filename="$(find ds_sim)/urdf/rdi300_sim.xacro"/>
 <xacro:include filename="$(find ds_sim)/urdf/nortek1000_sim.xacro"/>

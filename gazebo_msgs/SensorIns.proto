@@ -18,6 +18,8 @@ message Ins
     required gazebo.msgs.Vector3d linear_velocity  =  8;
     optional double heave                          =  9;
     optional double latitude_deg                   = 10;
-    optional gazebo.msgs.Vector3d position         = 11;
-    optional gazebo.msgs.Vector3d linear_accel     = 12;
+    optional double longitude_deg                  = 11;
+    optional double altitude                       = 12;
+    optional gazebo.msgs.Vector3d position         = 13;
+    optional gazebo.msgs.Vector3d linear_accel     = 14;
 }

@@ -67,12 +67,23 @@ void dsrosRosInsSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
         return;
     }
 
+    // Grab our lat/lon origin
+    auto world = gazebo::physics::get_world(sensor->WorldName());
+#if GAZEBO_MAJOR_VERSION > 7
+    auto spherical = world->SphericalCoords();
+#else
+    auto spherical = world->GetSphericalCoordinates();
+#endif
+    lat_origin_rad = spherical->LatitudeReference().Radian();
+    lat_origin = spherical->LatitudeReference().Degree();
+    lon_origin = spherical->LongitudeReference().Degree();
+
     // setup our sensor
     sensor->SetAddGravity(use_gravity);
 
     if (!ros::isInitialized()) {
-        ROS_FATAL("ROS has not been initialized properly...");
-        return;
+      ROS_FATAL("ROS has not been initialized properly...");
+      return;
     }
 
     node = new ros::NodeHandle(this->robot_namespace);
@@ -111,6 +122,9 @@ void dsrosRosInsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
     linear_velocity = sensor->GetLinearVelocity();
     linear_accel = sensor->GetLinearAcceleration();
     latitude = sensor->GetLatitude();
+    longitude = sensor->GetLongitude();
+    altitude = sensor->GetAltitude();
+    position = sensor->GetPosition();
 
     // add noise
     // In order to make the noise correct, define a tiny little
@@ -129,11 +143,27 @@ void dsrosRosInsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
     linear_velocity.Y() += GaussianKernel(0, noiseVel);
     linear_velocity.Z() += GaussianKernel(0, noiseVel);
 
+    body_linear_velocity = orientation.RotateVectorReverse(linear_velocity);
+
     linear_accel.X() += GaussianKernel(0, noiseAcc);
     linear_accel.Y() += GaussianKernel(0, noiseAcc);
     linear_accel.Z() += GaussianKernel(0, noiseAcc);
 
-    latitude += GaussianKernel(0, noiseLat);
+    double noise_north = GaussianKernel(0, noiseLat);
+    double noise_east = GaussianKernel(0, noiseLon);
+    double noise_alt = GaussianKernel(0, noiseDep);
+
+    // The spherical coordinates implementation is kinda broken, so use ours
+    // terrible AlvinXY approximation instead
+    double latrad = lat_origin_rad;
+    // use the mdeglat/mdeglon stuff from dslpp
+    double dx = 111415.13 * cos(latrad) - 94.55 * cos(3.0*latrad)
+              + 0.12 * cos(5.0*latrad);
+    double dy = 111132.09 - 566.05 * cos(2.0*latrad) + 1.20 * cos(4.0*latrad)
+              - 0.002 * cos(6.0*latrad);
+    longitude = lon_origin + (position.X() + noise_east)/dx;
+    latitude  = lat_origin + (position.Y() + noise_north)/dy;
+    altitude = position.Z() + noise_alt;
   }
 
   if (phinsbin_update_rate > 0 && (current_time - last_phinsbin_time).Double() >= 1.0/phinsbin_update_rate) {
@@ -176,6 +206,16 @@ void dsrosRosInsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
       phinsbin_msg.attitude_quaternion_stddev[0] = noisePR;
       phinsbin_msg.attitude_quaternion_stddev[1] = noisePR;
       phinsbin_msg.attitude_quaternion_stddev[2] = noiseY;
+
+      // position
+      phinsbin_msg.longitude = longitude;
+      phinsbin_msg.latitude = latitude;
+      phinsbin_msg.altitude = altitude; // depth is actually altitude
+
+      // body velocity
+      phinsbin_msg.body_velocity_XVn[0] = body_linear_velocity.X();
+      phinsbin_msg.body_velocity_XVn[1] = body_linear_velocity.Y();
+      phinsbin_msg.body_velocity_XVn[2] = body_linear_velocity.Z();
 
       // now body-rates
       phinsbin_msg.body_rates_XVn[0] = angular_velocity.X(); // XV1-- roll
@@ -415,6 +455,8 @@ bool dsrosRosInsSensor::LoadParameters() {
   noiseAngVel = LoadNoise("gaussianNoiseAngVel", M_PI/180.0);
   noiseAcc    = LoadNoise("gaussianNoiseAcc", 1.0);
   noiseLat    = LoadNoise("gaussianNoiseLat", 1.0);
+  noiseLon    = LoadNoise("gaussianNoiseLon", 1.0);
+  noiseDep    = LoadNoise("gaussianNoiseDepth", 1.0);
 
   return true;
 }

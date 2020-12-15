@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<!--
+Copyright 2018 Woods Hole Oceanographic Institution
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors
+   may be used to endorse or promote products derived from this software
+   without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+POSSIBILITY OF SUCH DAMAGE.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:macro name="phinsins_sim" params="name parent_link xyz rpy robot_namespace ins_topic gyro_topic att_topic phinsbin_topic">
+
+  <gazebo reference="${name}_link">
+    <material>Gazebo/Grey</material>
+  </gazebo>
+
+  <gazebo reference="${parent_link}">
+    <sensor name="${name}_sensor" type="dsros_ins">
+      <always_on>1</always_on>
+      <update_rate>100.000</update_rate>
+      <pose frame="">${xyz} ${rpy}</pose>
+      <plugin name="${name}_sensor_controller" filename="libdsros_ros_ins.so">
+        <robotNamespace>${robot_namespace}</robotNamespace>
+        <insTopicName>${ins_topic}</insTopicName>
+        <gyroTopicName>${gyro_topic}</gyroTopicName>
+        <attTopicName>${att_topic}</attTopicName>
+        <phinsbinTopicName>${phinsbin_topic}</phinsbinTopicName>
+        <frameName>${name}_link</frameName>
+        <includeGravity>False</includeGravity>
+        <updateRateHZ>10</updateRateHZ>
+        <phinsbinUpdateRateHZ>100</phinsbinUpdateRateHZ>
+        <gaussianNoisePR>0.001</gaussianNoisePR>
+        <gaussianNoiseY>0.01</gaussianNoiseY>
+        <gaussianNoiseVel>0.01</gaussianNoiseVel>
+        <gaussianNoiseAngVel>0.01</gaussianNoiseAngVel>
+        <gaussianNoiseAcc>0.01</gaussianNoiseAcc>
+        <!-- Noise for an INS is driven primarily by _drift_, not Gaussian noise.
+          Of course, we don't actually integration noise, so maybe not so helpful -->
+        <gaussianNoiseLat>0.0</gaussianNoiseLat>
+        <gaussianNoiseLon>0.0</gaussianNoiseLon>
+        <gaussianNoiseDepth>0.001</gaussianNoiseDepth>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+</xacro:macro>
+
+</robot>
+

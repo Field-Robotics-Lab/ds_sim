@@ -79,10 +79,14 @@ namespace sensors {
     public: common::Time GetTime() const;
     public: std::string GetEntityName() const;
     public: ignition::math::Quaterniond GetOrientation() const;
-    public: ignition::math::Vector3d GetAngularVelocity() const;
+   public: ignition::math::Vector3d GetPosition() const;
+   public: ignition::math::Vector3d GetAngularVelocity() const;
     public: ignition::math::Vector3d GetLinearVelocity() const;
+    public: ignition::math::Vector3d GetBodyLinearVelocity() const;
     public: ignition::math::Vector3d GetLinearAcceleration() const;
     public: double GetLatitude() const;
+    public: double GetLongitude() const;
+    public: double GetAltitude() const;
     public: double GetRoll() const;
     public: double GetPitch() const;
     public: double GetHeading() const;
@@ -101,6 +105,7 @@ namespace sensors {
         std::string topicName;
         ds_sim::msgs::Ins msg;
         bool add_gravity;
+
   }; // class declaration
 }; // namespace sensors
 }; // namespace gazebo
