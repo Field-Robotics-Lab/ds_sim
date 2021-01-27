@@ -49,6 +49,7 @@ class DsrosHydro : public ModelPlugin {
 
   ignition::math::Vector3<double> grav_center_body;
   ignition::math::Vector3<double> grav_force_world;
+  ignition::math::Vector3<double> com_vector; // center of mass relative to link origin
 
   ignition::math::Vector3<double> drag_center_body; // center-of-mass relative
   Matrix6d drag_lin_coeff;

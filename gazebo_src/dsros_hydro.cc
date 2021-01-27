@@ -93,6 +93,14 @@ void DsrosHydro::Load(physics::ModelPtr _parent, sdf::ElementPtr _sdf) {
     drag_center_body = loadVector(drag->GetElement("center"));
   }
 
+  // load the
+#if GAZEBO_MAJOR_VERSION > 7
+  com_vector = body_link->GetInertial()->CoG();
+#else
+  com_vector = body_link->GetInertial()->GetCoG().Ign();
+#endif
+
+
   //gzmsg <<" Loading linear drag...\n";
   if (drag->HasElement("linear")) {
     drag_lin_coeff = loadMatrix(drag->GetElement("linear"));
@@ -284,6 +292,7 @@ void DsrosHydro::OnUpdate(const common::UpdateInfo& _info) {
   }
 
   // Apply gravity
+  // FORCE: Gravity
   body_link->AddForce(grav_force_world); // works at COM
 
   // Apply buoyancy.  Note that this is relative to the CENTER OF MASS, not the link
@@ -294,6 +303,7 @@ void DsrosHydro::OnUpdate(const common::UpdateInfo& _info) {
   double depth = -(body_link->GetWorldPose().pos.z);
 #endif
 
+  // FORCE: Buoyancy
   if (depth >= buoy_all_buoyancy_depth) {
     // we're fully submerged
     body_link->AddForceAtRelativePosition(buoy_force_world, buoy_center_com);
@@ -318,9 +328,14 @@ void DsrosHydro::OnUpdate(const common::UpdateInfo& _info) {
   ignition::math::Vector3d vel_ang = body_link->GetRelativeAngularVel().Ign();
 #endif
 
+  // velocity is relative to link origin, but for fluid dynamics we need it at the location of
+  // the center of mass
+  vel_lin -= com_vector.Cross(vel_ang);
+
   ignition::math::Vector3d drag_lin_force = drag_lin_coeff.m11 * vel_lin + drag_lin_coeff.m12 * vel_ang;
   ignition::math::Vector3d drag_lin_torque = drag_lin_coeff.m21 * vel_lin + drag_lin_coeff.m22 * vel_ang;
 
+  // FORCE: Linear Drag
   body_link->AddLinkForce(-drag_lin_force, drag_center_body);
   body_link->AddRelativeTorque(-drag_lin_torque);
 
@@ -355,6 +370,7 @@ void DsrosHydro::OnUpdate(const common::UpdateInfo& _info) {
   ignition::math::Vector3d drag_quad_force(tmp_quad_force[0], tmp_quad_force[1], tmp_quad_force[2]);
   ignition::math::Vector3d drag_quad_torque(tmp_quad_torque[0], tmp_quad_torque[1], tmp_quad_torque[2]);
 
+  // FORCE: Quadratic drag
   body_link->AddLinkForce(-drag_quad_force, drag_center_body);
   body_link->AddRelativeTorque(-drag_quad_torque);
 
@@ -402,6 +418,7 @@ void DsrosHydro::OnUpdate(const common::UpdateInfo& _info) {
   ignition::math::Vector3d added_mass_torque = added_mass_inertia_torque + added_mass_cor_torque;
 
   // Forces are in the body frame, but applied to the CoM
+  // FORCE: Added mass
   body_link->AddRelativeForce(-added_mass_force);
   body_link->AddRelativeTorque(-added_mass_torque);
 
