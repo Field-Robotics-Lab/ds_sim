@@ -217,6 +217,16 @@ void dsrosRosInsSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
       phinsbin_msg.body_velocity_XVn[1] = body_linear_velocity.Y();
       phinsbin_msg.body_velocity_XVn[2] = body_linear_velocity.Z();
 
+      // global velocity noise
+      phinsbin_msg.velocity_NEU[0] = linear_velocity.X();
+      phinsbin_msg.velocity_NEU[1] = linear_velocity.Y();
+      phinsbin_msg.velocity_NEU[2] = linear_velocity.Z();
+
+      // global velocity noise
+      phinsbin_msg.velocity_stddev_NEU[0] = noiseVel;
+      phinsbin_msg.velocity_stddev_NEU[1] = noiseVel;
+      phinsbin_msg.velocity_stddev_NEU[2] = noiseVel;
+
       // now body-rates
       phinsbin_msg.body_rates_XVn[0] = angular_velocity.X(); // XV1-- roll
       phinsbin_msg.body_rates_XVn[1] = angular_velocity.Y(); // XV2-- pitch
