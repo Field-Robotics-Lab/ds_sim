@@ -74,6 +74,7 @@ void dsrosRosDvlSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
     node = new ros::NodeHandle(this->robot_namespace);
 
     dvl_data_publisher = node->advertise<ds_sensor_msgs::Dvl>(topic_name, 1);
+    rng_publisher = node->advertise<ds_sensor_msgs::Ranges3D>(ranges_topic_name, 1);
     pt_data_publisher  = node->advertise<sensor_msgs::PointCloud>(topic_name + "_cloud", 1);
     current_profile_publisher = node->advertise<ds_sensor_msgs::Adcp>(topic_name + "_current", 1);
     pt_data_publisher  = node->advertise<sensor_msgs::PointCloud>(topic_name + "_cloud", 1);
@@ -468,7 +469,7 @@ bool dsrosRosDvlSensor::LoadParameters() {
   }
   else
   {
-    ranges_topic_name = "/ranges";
+    ranges_topic_name = "/dvl_ranges";
     ROS_WARN_STREAM("missing <rangesTopicName>, set to /namespace/default: " << ranges_topic_name);
   }
 
