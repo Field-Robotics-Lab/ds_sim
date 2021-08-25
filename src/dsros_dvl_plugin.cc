@@ -85,15 +85,15 @@ void dsrosRosDvlSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
     // Initialize data members and the Adcp message for current profiling
     current_profile_cell_depth = (sensor->RangeMax() - sensor->RangeMin()) / water_track_bins;
     current_profile_bin0_distance = sensor->RangeMin() + current_profile_cell_depth / 2.0;
-    for (int beam = 0; beam < 4; beam++)
+    for (size_t beam = 0; beam < 4; beam++)
     {
         ignition::math::Vector3d unit_vec = sensor->GetBeamUnitVec(beam);
         adcp.beam_unit_vec[beam].x = unit_vec.X();
         adcp.beam_unit_vec[beam].y = unit_vec.Y();
         adcp.beam_unit_vec[beam].z = unit_vec.Z();
-    } // for (int beam = 0;...
+    } // for (size_t beam = 0;...
     adcp.vel_bin_beams.resize(water_track_bins);
-    for (int bin = 0; bin < water_track_bins; bin++)
+    for (size_t bin = 0; bin < water_track_bins; bin++)
     {
         if (current_profile_coord_mode == ds_sensor_msgs::Adcp::ADCP_COORD_BEAM)
         {
@@ -107,7 +107,7 @@ void dsrosRosDvlSensor::Load(sensors::SensorPtr sensor_, sdf::ElementPtr sdf_) {
 //            adcp.vel_bin_beams[bin].bin_intensity.resize(1);     // Commented out in msg def for now
 //            adcp.vel_bin_beams[bin].bin_correlation.resize(1);   // Commented out in msg def for now
         }
-    } // for (int bin = 0;...
+    } // for (size_t bin = 0;...
 }
 
 void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
@@ -179,6 +179,7 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         wtr_course += 360.0;
     }
 
+    // publish DVL data message
     if(dvl_data_publisher.getNumSubscribers() > 0) {
 
         // prepare message header
@@ -257,6 +258,7 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         ros::spinOnce();
     }
 
+    // publish current profile (ADCP) message
     if ((current_profile_publisher.getNumSubscribers() > 0) && 
         ((current_profile_coord_mode == ds_sensor_msgs::Adcp::ADCP_COORD_BEAM) ||
          (current_profile_coord_mode == ds_sensor_msgs::Adcp::ADCP_COORD_INSTRUMENT)) &&
@@ -279,25 +281,24 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
 
         // Fill in beam-specific bin velocities as water velocity plus noise
         // out to the beam's current range.  No solution (0.0) beyond that
-        for (int bin = 0; bin < water_track_bins; bin ++)
+        for (size_t bin = 0; bin < water_track_bins; bin ++)
         {
             double bin_range = current_profile_bin0_distance + 
-                               (current_profile_cell_depth / 2.0) +
                                (current_profile_cell_depth * bin);
 
             if (current_profile_coord_mode == ds_sensor_msgs::Adcp::ADCP_COORD_BEAM)
             {   // Calculate a velocity in beam coordinates for each beam for every cell
                 for (size_t beam=0; beam < sensor->NumBeams(); beam++)
                 {
-                    double beam_range = sensor->GetBeamRange(beam);
-                    if ((beam_range >= bin_range) || (beam_range <= 0.0)) 
+                    // add noise to the beam's bin-specific velocity
+                    double bin_velocity = sensor->GetBeamWaterVelocityBin(beam, bin) +
+                                          GaussianKernel(0, gaussian_noise_wtr_vel);
+                    if (bin_velocity != gazebo::sensors::DsrosDvlBeam::NO_VELOCITY)
                     {
                         ignition::math::Vector3d beamUnit = sensor->GetBeamUnitVec(beam);
-                        double beam_velocity = sensor->GetBeamWaterVelocity(beam) +
-                                           GaussianKernel(0, gaussian_noise_wtr_vel);
-                        adcp.vel_bin_beams[bin].velocity_bin_beam[beam].x = -beam_velocity * beamUnit.X();
-                        adcp.vel_bin_beams[bin].velocity_bin_beam[beam].y = -beam_velocity * beamUnit.Y();
-                        adcp.vel_bin_beams[bin].velocity_bin_beam[beam].z = -beam_velocity * beamUnit.Z();
+                        adcp.vel_bin_beams[bin].velocity_bin_beam[beam].x = -bin_velocity * beamUnit.X();
+                        adcp.vel_bin_beams[bin].velocity_bin_beam[beam].y = -bin_velocity * beamUnit.Y();
+                        adcp.vel_bin_beams[bin].velocity_bin_beam[beam].z = -bin_velocity * beamUnit.Z();
                     } // if (beam_range >=...
                     else 
                     {
@@ -312,11 +313,13 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
                 bool range_solution = true;
                 for (size_t beam=0; beam < sensor->NumBeams(); beam++)
                 {
-                    double beam_range = sensor->GetBeamRange(beam);
-                    if (range_solution && ((beam_range >= bin_range) || (beam_range <= 0.0)))
+                    double bin_velocity = sensor->GetBeamWaterVelocityBin(beam, bin);
+                    if (range_solution &&
+                        (bin_velocity != gazebo::sensors::DsrosDvlBeam::NO_VELOCITY))
                     {
                         ignition::math::Vector3d beamUnit = sensor->GetBeamUnitVec(beam);
-                        beam_wtr_vel(beam) = sensor->GetBeamWaterVelocity(beam) + GaussianKernel(0, gaussian_noise_wtr_vel);
+                        beam_wtr_vel(beam) = sensor->GetBeamWaterVelocityBin(beam, bin) +
+                                             GaussianKernel(0, gaussian_noise_wtr_vel);
                         beam_wtr_unit(beam, 0) = beamUnit.X();
                         beam_wtr_unit(beam, 1) = beamUnit.Y();
                         beam_wtr_unit(beam, 2) = beamUnit.Z();
@@ -328,7 +331,10 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
                 } // for (size_t beam=0;...
                 if (range_solution)  // if bin for any beam is beyond bottom, solution will be 0
                 {
-                    Eigen::Vector3d bin_velocity = beam_wtr_unit.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(beam_wtr_vel);
+                    Eigen::Vector3d bin_velocity =
+                        beam_wtr_unit.jacobiSvd(Eigen::ComputeThinU |
+                                                Eigen::ComputeThinV).
+                                      solve(beam_wtr_vel);
                     adcp.vel_bin_beams[bin].velocity_bin_beam[0].x = -bin_velocity[0];
                     adcp.vel_bin_beams[bin].velocity_bin_beam[0].y = -bin_velocity[1];
                     adcp.vel_bin_beams[bin].velocity_bin_beam[0].z = -bin_velocity[2];
@@ -340,13 +346,13 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
                     adcp.vel_bin_beams[bin].velocity_bin_beam[0].z = 0.0;
                 } // else
             } // else
-        } // for (int bin = 0;...
+        } // for (size_t bin = 0;...
 
         current_profile_publisher.publish(adcp);
         ros::spinOnce();
     }
 
-
+    // publish point cloud message
     if (pt_data_publisher.getNumSubscribers() > 0) {
         // prepare message header
         pt_msg.header.frame_id = pointcloud_frame;
@@ -381,6 +387,7 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         ros::spinOnce();
     }
 
+    // publish DVL contact range message
     if (rng_publisher.getNumSubscribers() > 0) {
         // prepare message header
         rng.header.frame_id = frame_name;
@@ -412,7 +419,6 @@ void dsrosRosDvlSensor::UpdateChild(const gazebo::common::UpdateInfo &_info) {
         rng_publisher.publish(rng);
         ros::spinOnce();
     }
-
 
     last_time = current_time;
 }

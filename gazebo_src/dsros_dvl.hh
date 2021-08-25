@@ -43,6 +43,7 @@
 
 #include <string>
 #include <mutex>
+#include <cfloat>
 
 #include <sdf/sdf.hh>
 #include <ignition/math/Vector3.hh>
@@ -56,9 +57,15 @@
 #include <gazebo/common/common.hh>
 
 #include <SensorDvl.pb.h>
+#include <StratifiedCurrentVelocity.pb.h>
 
 namespace gazebo {
 namespace sensors {
+
+  typedef const boost::shared_ptr<
+      const dave_gazebo_world_plugins_msgs::msgs::StratifiedCurrentVelocity>
+          ConstStratifiedCurrentVelocityPtr;
+
 
   // The gazebo implementation uses pimpl, but we can 
   // easily recompile our plugin, so don't bother.
@@ -68,6 +75,7 @@ namespace sensors {
 
   class DsrosDvlBeam {
       public:
+        static constexpr double NO_VELOCITY = DBL_MAX;  // "No current velocity" flag value
 
         DsrosDvlBeam(const physics::PhysicsEnginePtr& physicsEngine,
                   const DsrosDvlSensor* parent, int beamnum,
@@ -78,6 +86,7 @@ namespace sensors {
         void Update(const physics::WorldPtr& world, const ignition::math::Vector3d& sensorVel,
                                                     const ignition::math::Vector3d& sensorWtrVel,
                                                     const ignition::math::Pose3d& inst2world);
+        const DsrosDvlSensor* parent;
         physics::CollisionPtr collision;
         physics::RayShapePtr shape;
         ignition::math::Pose3d centerPose;
@@ -91,6 +100,8 @@ namespace sensors {
         double startRange;
         double beamVelocity;
         double beamWaterVelocity;
+
+        std::vector<double> beamWaterVelocityBins;
         ignition::math::Vector3d beamUnitVector; // in body coordinates
 
         bool isValid() const;
@@ -110,6 +121,8 @@ namespace sensors {
 
     public: virtual std::string GetOceanCurrentTopic() const;
 
+    public: virtual std::string GetStratifiedOceanCurrentTopic() const;
+
     public: virtual void Init();
 
     public: virtual void Fini();
@@ -122,6 +135,7 @@ namespace sensors {
     public: bool BeamValid(int idx) const;
     public: double GetBeamVelocity(int idx) const;
     public: double GetBeamWaterVelocity(int idx) const;
+    public: double GetBeamWaterVelocityBin(int idx, int bin) const;
     public: double GetBeamRange(int idx) const;
 
     public: double RangeMin() const;
@@ -136,6 +150,9 @@ namespace sensors {
     public: friend class DsrosDvlBeam;
     protected: virtual bool UpdateImpl(const bool _force);
     protected: void OnOceanCurrent(ConstVector3dPtr &_msg);
+    protected: void OnStratifiedOceanCurrent(ConstStratifiedCurrentVelocityPtr &_msg);
+
+    private: ignition::math::Vector3d OceanCurrentAtDepth(double depth) const;
 
     protected:
         physics::LinkPtr parentLink;
@@ -160,6 +177,11 @@ namespace sensors {
 
         std::vector<DsrosDvlBeam> beams;
 
+        // Water track/current profiling bin information
+        int waterTrackBins;
+        double currentProfileCellDepth;
+        double currentProfileBin0Distance;
+
         // Collision physics stuff
         physics::CollisionPtr rangeCollision;
         physics::MeshShapePtr beamShape;
@@ -169,6 +191,11 @@ namespace sensors {
         std::string currentTopicName;
         transport::SubscriberPtr currentSub;
         ignition::math::Vector3d oceanCurrent;
+
+        // Stratified ocean current subscription (if it's being published)
+        std::string stratifiedCurrentTopicName;
+        transport::SubscriberPtr stratifiedCurrentSub;
+        std::vector<ignition::math::Vector4d> stratifiedOceanCurrent;
   }; // class declaration
 }; // namespace sensors
 }; // namespace gazebo
