@@ -191,11 +191,13 @@ namespace sensors {
         std::string currentTopicName;
         transport::SubscriberPtr currentSub;
         ignition::math::Vector3d oceanCurrent;
+        bool recvdOceanCurrent = false;  // received at least 1 flag
 
         // Stratified ocean current subscription (if it's being published)
         std::string stratifiedCurrentTopicName;
         transport::SubscriberPtr stratifiedCurrentSub;
         std::vector<ignition::math::Vector4d> stratifiedOceanCurrent;
+        bool recvdStratifiedOceanCurrent = false;  // received at least 1 flag
   }; // class declaration
 }; // namespace sensors
 }; // namespace gazebo
