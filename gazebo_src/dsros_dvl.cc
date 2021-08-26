@@ -467,24 +467,43 @@ double DsrosDvlSensor::GetBeamRange(int idx) const {
 }
 
 void DsrosDvlSensor::OnOceanCurrent(ConstVector3dPtr &_msg) {
+    this->recvdOceanCurrent = true;
     this->oceanCurrent.X() = _msg->x();
     this->oceanCurrent.Y() = _msg->y();
     this->oceanCurrent.Z() = _msg->z();
-    gzmsg << "Update ocean current to " << this->oceanCurrent << "\n";
+//    gzmsg << "Update ocean current to " << this->oceanCurrent << "\n";
 }
 
 void DsrosDvlSensor::OnStratifiedOceanCurrent(
   ConstStratifiedCurrentVelocityPtr &_msg) {
+    this->recvdStratifiedOceanCurrent = true;
     stratifiedOceanCurrent.clear();
+    double xCurrent = 0.0;
+    double yCurrent = 0.0;
+    double zCurrent = 0.0;
     for (int i=0; i < _msg->velocity_size(); i++) {
         ignition::math::Vector4d vel(_msg->velocity(i).x(),
                                      _msg->velocity(i).y(),
                                      _msg->velocity(i).z(),
                                      _msg->depth(i));
         this->stratifiedOceanCurrent.push_back(vel);
+        xCurrent += _msg->velocity(i).x();
+        yCurrent += _msg->velocity(i).y();
+        zCurrent += _msg->velocity(i).z();
 //        gzmsg << "Stratified current at " << vel.W()
 //              << " meters: (" << vel.X() << ", " << vel.Y() << ", "
 //              << vel.Z() << ")" << std::endl;
+    }
+    // use average stratified current for global
+    // if no global current received yet
+    if (!this->recvdOceanCurrent && 
+        (this->stratifiedOceanCurrent.size() > 0)) {
+        this->oceanCurrent.X() = 
+            xCurrent / this->stratifiedOceanCurrent.size();
+        this->oceanCurrent.Y() = 
+            yCurrent / this->stratifiedOceanCurrent.size();
+        this->oceanCurrent.Z() = 
+            zCurrent / this->stratifiedOceanCurrent.size();
     }
 }
 
