@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   gazebo_ros
   tf
+  dave_gazebo_world_plugins
 )
 
 find_package(ClangFormat)
@@ -85,8 +86,8 @@ set(SENSORS_SRCS
 # dsros_sensors (passed at STARTUP as a system plugin)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 add_library(dsros_sensors ${SENSORS_SRCS})
-target_link_libraries(dsros_sensors ds_sim_gazebo_msgs ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_sensors ds_sim_gazebo_msgs)
+target_link_libraries(dsros_sensors ds_sim_gazebo_msgs dave_gazebo_world_plugins_msgs ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_sensors ds_sim_gazebo_msgs dave_gazebo_world_plugins_msgs)
 
 # dsros_ros_depth
 add_library(dsros_ros_depth src/dsros_depth_plugin.cc src/dsros_depth_plugin.hh)
@@ -100,8 +101,8 @@ add_dependencies(dsros_ros_ins ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPO
 
 # DVL plugin
 add_library(dsros_ros_dvl src/dsros_dvl_plugin.cc src/dsros_dvl_plugin.hh)
-target_link_libraries(dsros_ros_dvl dsros_sensors ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_ros_dvl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(dsros_ros_dvl dsros_sensors dave_gazebo_world_plugins_msgs ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_ros_dvl dave_gazebo_world_plugins_msgs ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 # GPS plugin
 add_library(dsros_ros_gps src/dsros_gps_plugin.cc src/dsros_gps_plugin.hh)

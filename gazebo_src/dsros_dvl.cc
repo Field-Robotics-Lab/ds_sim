@@ -56,6 +56,8 @@ DsrosDvlBeam::DsrosDvlBeam(const physics::PhysicsEnginePtr& physicsEngine,
                   const ignition::math::Pose3d& sensor_pose,
                   const ignition::math::Pose3d& beam_pose) {
 
+    this->parent = parent;
+
     // Compute the center pose
     double range = parent->RangeMax();
     double radius = range * tan(parent->BeamWidth()*M_PI/180.0);
@@ -101,6 +103,8 @@ DsrosDvlBeam::DsrosDvlBeam(const physics::PhysicsEnginePtr& physicsEngine,
     this->collision->SetCollideBits(GZ_SENSOR_COLLIDE);
     this->collision->SetCategoryBits(GZ_SENSOR_COLLIDE);
 
+    this->beamWaterVelocityBins.resize(parent->waterTrackBins);
+
     // setup the contact subscription
     /*
     std::string topic = 
@@ -127,8 +131,38 @@ void DsrosDvlBeam::Update(const physics::WorldPtr& world,
     contactRange += startRange; // have to add the initial range offset.  #bugfix.
 
     // if no bottom return, use sensor water velocity to compute the beam's water track velocity
+    // NOTE: This is based on the "global" current, not the stratified current
     ignition::math::Vector3d inst_wtr_vel = inst2world.Rot().RotateVectorReverse(sensorWtrVel);
     beamWaterVelocity = beamUnitVector.Dot(inst_wtr_vel);
+
+    // Use stratified current to compute bean-specific velocities for each bin
+    for (int bin = 0; bin < this->beamWaterVelocityBins.size(); bin++)
+    {
+        double binRange = this->parent->currentProfileBin0Distance +
+                          bin * this->parent->currentProfileCellDepth;
+        if ((this->contactRange > 0) && (binRange > this->contactRange))
+        {
+            this->beamWaterVelocityBins[bin] = DsrosDvlBeam::NO_VELOCITY;
+        }
+        else
+        {
+            ignition::math::Vector3d binPt =
+                inst2world.Rot().RotateVector(binRange * beamUnitVector) +
+                inst2world.Pos();
+            ignition::math::Vector3d current =
+                this->parent->OceanCurrentAtDepth(-binPt.Z());
+            ignition::math::Vector3d binVelocity =
+                inst2world.Rot().RotateVectorReverse(sensorVel - current);
+            this->beamWaterVelocityBins[bin] = this->beamUnitVector.Dot(binVelocity);
+//            gzmsg << "Beam " << this->number << " bin " << bin
+//                  << " water velocity info:" << std::endl;
+//            gzmsg << "  Bin depth: " << binRange << std::endl;
+//            gzmsg << "  Bin point: " << binPt << std::endl;
+//            gzmsg << "  Current at bin point depth: " << current << std::endl;
+//            gzmsg << "  Bin velocity: " << binVelocity << " and value: "
+ //                 << this->beamWaterVelocityBins[bin] << std::endl;
+        }
+    }
 
     if (entityName.empty()) {
         contactEntityName = "";
@@ -243,6 +277,22 @@ void DsrosDvlSensor::Load(const std::string &_worldName) {
     this->beamWidth = 4.0;
      */
 
+    // Set up water tracking/current profiling bins
+    if (dvlElem->HasElement("waterTrackBins"))
+    {
+        this->waterTrackBins = dvlElem->Get<int>("waterTrackBins");
+//        gzmsg << "Water track bins set to " << this->waterTrackBins << std::endl;
+    }
+    else
+    {
+        this->waterTrackBins = 1;
+//        gzmsg << "Water track bins set to default" << std::endl;
+    }
+    this->currentProfileCellDepth = (this->rangeMax - this->rangeMin) /
+                                    this->waterTrackBins;
+    this->currentProfileBin0Distance = this->rangeMin +
+                                       this->currentProfileCellDepth / 2.0;
+
     // setup to publish!
     this->topicName = this->GetTopic();
     this->dvlPub = this->node->Advertise<ds_sim::msgs::Dvl>(this->topicName, 50);
@@ -283,6 +333,12 @@ void DsrosDvlSensor::Load(const std::string &_worldName) {
     this->currentTopicName = this->GetOceanCurrentTopic();
     this->currentSub = this->node->Subscribe(this->currentTopicName, 
                                              &DsrosDvlSensor::OnOceanCurrent, this);
+
+    // setup the stratified ocean current subscription
+    this->stratifiedCurrentTopicName = this->GetStratifiedOceanCurrentTopic();
+    this->stratifiedCurrentSub =
+        this->node->Subscribe(this->stratifiedCurrentTopicName,
+                              &DsrosDvlSensor::OnStratifiedOceanCurrent, this);
 }
 
 void DsrosDvlSensor::Init() {
@@ -316,6 +372,20 @@ std::string DsrosDvlSensor::GetOceanCurrentTopic() const {
         topicName += this->sdf->Get<std::string>("ocean_current_topic");
     } else {
         topicName += "hydrodynamics/current_velocity";
+    }
+
+    boost::replace_all(topicName, "::", "/");
+
+    return topicName;
+}
+
+std::string DsrosDvlSensor::GetStratifiedOceanCurrentTopic() const {
+    std::string topicName = "";
+
+    if (this->sdf->HasElement("stratified_ocean_current_topic")) {
+        topicName += this->sdf->Get<std::string>("stratified_ocean_current_topic");
+    } else {
+        topicName += "hydrodynamics/stratified_current_velocity";
     }
 
     boost::replace_all(topicName, "::", "/");
@@ -388,15 +458,53 @@ double DsrosDvlSensor::GetBeamWaterVelocity(int idx) const {
     return beams[idx].beamWaterVelocity;
 }
 
+double DsrosDvlSensor::GetBeamWaterVelocityBin(int idx, int bin) const {
+    return beams[idx].beamWaterVelocityBins[bin];
+}
+
 double DsrosDvlSensor::GetBeamRange(int idx) const {
     return beams[idx].contactRange;
 }
 
 void DsrosDvlSensor::OnOceanCurrent(ConstVector3dPtr &_msg) {
+    this->recvdOceanCurrent = true;
     this->oceanCurrent.X() = _msg->x();
     this->oceanCurrent.Y() = _msg->y();
     this->oceanCurrent.Z() = _msg->z();
-    //gzmsg << "Update ocean current to " << this->oceanCurrent << "\n";
+//    gzmsg << "Update ocean current to " << this->oceanCurrent << "\n";
+}
+
+void DsrosDvlSensor::OnStratifiedOceanCurrent(
+  ConstStratifiedCurrentVelocityPtr &_msg) {
+    this->recvdStratifiedOceanCurrent = true;
+    stratifiedOceanCurrent.clear();
+    double xCurrent = 0.0;
+    double yCurrent = 0.0;
+    double zCurrent = 0.0;
+    for (int i=0; i < _msg->velocity_size(); i++) {
+        ignition::math::Vector4d vel(_msg->velocity(i).x(),
+                                     _msg->velocity(i).y(),
+                                     _msg->velocity(i).z(),
+                                     _msg->depth(i));
+        this->stratifiedOceanCurrent.push_back(vel);
+        xCurrent += _msg->velocity(i).x();
+        yCurrent += _msg->velocity(i).y();
+        zCurrent += _msg->velocity(i).z();
+//        gzmsg << "Stratified current at " << vel.W()
+//              << " meters: (" << vel.X() << ", " << vel.Y() << ", "
+//              << vel.Z() << ")" << std::endl;
+    }
+    // use average stratified current for global
+    // if no global current received yet
+    if (!this->recvdOceanCurrent && 
+        (this->stratifiedOceanCurrent.size() > 0)) {
+        this->oceanCurrent.X() = 
+            xCurrent / this->stratifiedOceanCurrent.size();
+        this->oceanCurrent.Y() = 
+            yCurrent / this->stratifiedOceanCurrent.size();
+        this->oceanCurrent.Z() = 
+            zCurrent / this->stratifiedOceanCurrent.size();
+    }
 }
 
 bool DsrosDvlSensor::UpdateImpl(const bool _force) {
@@ -524,6 +632,54 @@ bool DsrosDvlSensor::UpdateImpl(const bool _force) {
     }
 
     return true;
+}
+
+ignition::math::Vector3d DsrosDvlSensor::OceanCurrentAtDepth(double depth) const
+{
+    ignition::math::Vector3d current(0.0, 0.0, 0.0);
+    // If test depth is above the surface, just return (0, 0, 0)
+    if (depth < 0.0)
+    {
+        return current;
+    }
+
+    // If no stratified current, return the single current value
+    if (this->stratifiedOceanCurrent.size() == 0)
+    {
+        return this->oceanCurrent;
+    }
+
+    // Shallower than first depth (return first depth value)
+    if (depth <= this->stratifiedOceanCurrent.front().W())
+    {
+        ignition::math::Vector4d stratCurrent =
+            this->stratifiedOceanCurrent.front();
+        current.Set(stratCurrent.X(), stratCurrent.Y(), stratCurrent.Z());
+    }
+
+    // Deeper than last depth (return last depth value)
+    if (depth >= this->stratifiedOceanCurrent.back().W())
+    {
+        ignition::math::Vector4d stratCurrent =
+            this->stratifiedOceanCurrent.front();
+        current.Set(stratCurrent.X(), stratCurrent.Y(), stratCurrent.Z());
+    }
+
+    double lowIndex = 0;
+    ignition::math::Vector4d lower = this->stratifiedOceanCurrent[lowIndex];
+    ignition::math::Vector4d upper = this->stratifiedOceanCurrent[lowIndex+1];
+    while (depth > upper.W())
+    {
+        lowIndex++;
+        lower = upper;
+        upper = this->stratifiedOceanCurrent[lowIndex+1];
+    }
+    double interp = (depth - lower.W()) / (upper.W() - lower.W());
+    double xCurrent = lower.X() + interp * (upper.X() - lower.X());
+    double yCurrent = lower.Y() + interp * (upper.Y() - lower.Y());
+    double zCurrent = lower.Z() + interp * (upper.Z() - lower.Z());
+    current.Set(xCurrent, yCurrent, zCurrent);
+    return current;
 }
 
 GZ_REGISTER_STATIC_SENSOR("dsros_dvl", DsrosDvlSensor);
