@@ -135,6 +135,12 @@ catkin_package(
   DEPENDS
 )
 
+install(TARGETS ds_sim_gazebo_msgs dsros_jointstate_publisher dsros_navstate_publisher dsros_sensors dsros_ros_depth dsros_ros_ins dsros_ros_dvl dsros_ros_gps dsros_ros_reson dsros_hydro dsros_ros_thruster
+  DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 ## Install project namespaced headers
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
