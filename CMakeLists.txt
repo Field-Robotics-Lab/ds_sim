@@ -86,8 +86,8 @@ set(SENSORS_SRCS
 # dsros_sensors (passed at STARTUP as a system plugin)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
 add_library(dsros_sensors ${SENSORS_SRCS})
-target_link_libraries(dsros_sensors ds_sim_gazebo_msgs ${GAZEBO_LIBRARIES})
-add_dependencies(dsros_sensors ds_sim_gazebo_msgs)
+target_link_libraries(dsros_sensors ds_sim_gazebo_msgs dave_gazebo_world_plugins_msgs ${GAZEBO_LIBRARIES})
+add_dependencies(dsros_sensors ds_sim_gazebo_msgs dave_gazebo_world_plugins_msgs )
 
 # dsros_ros_depth
 add_library(dsros_ros_depth src/dsros_depth_plugin.cc src/dsros_depth_plugin.hh)
