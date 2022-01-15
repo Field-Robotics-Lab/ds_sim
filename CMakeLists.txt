@@ -51,6 +51,15 @@ foreach(ITR ${GAZEBO_INCLUDE_DIRS})
   endif()
 endforeach()
 
+catkin_package(
+  INCLUDE_DIRS include
+  #LIBRARIES ds_sim_gazebo_msgs dsros_jointstate_publisher dsros_ros_depth dsros_ros_ins dsros_ros_dvl dsros_ros_gps
+  LIBRARIES dsros_sensors
+  CATKIN_DEPENDS xacro roscpp gazebo_ros sensor_msgs ds_core_msgs ds_sensor_msgs ds_actuator_msgs ds_multibeam_msgs
+    dave_gazebo_world_plugins
+  DEPENDS
+)
+
 # Build any protobuf messages we're going to use
 set (gazebo_msgs
   gazebo_msgs/SensorDepth.proto
@@ -85,8 +94,8 @@ set(SENSORS_SRCS
 
 # dsros_sensors (passed at STARTUP as a system plugin)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GAZEBO_CXX_FLAGS}")
-add_library(dsros_sensors ${SENSORS_SRCS})
-target_link_libraries(dsros_sensors ds_sim_gazebo_msgs ${GAZEBO_LIBRARIES})
+add_library(dsros_sensors SHARED ${SENSORS_SRCS})
+target_link_libraries(dsros_sensors ds_sim_gazebo_msgs ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 add_dependencies(dsros_sensors ds_sim_gazebo_msgs)
 
 # dsros_ros_depth
@@ -127,14 +136,6 @@ add_dependencies(dsros_ros_thruster ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin
 #add_library(dsros_spotlight gazebo_src/dsros_spotlight.cc gazebo_src/dsros_spotlight.h)
 #target_link_libraries(dsros_spotlight ds_sim_gazebo_msgs  ${catkin_LIBRARIES} ${GAZEBO_LIBRARIES})
 #add_dependencies(dsros_spotlight ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
-catkin_package(
-  INCLUDE_DIRS include
-  #LIBRARIES ds_sim_gazebo_msgs  dsros_jointstate_publisher dsros_sensors dsros_ros_depth dsros_ros_ins dsros_ros_dvl dsros_ros_gps
-  CATKIN_DEPENDS xacro roscpp gazebo_ros sensor_msgs ds_core_msgs ds_sensor_msgs ds_actuator_msgs ds_multibeam_msgs
-    dave_gazebo_world_plugins
-  DEPENDS
-)
 
 install(TARGETS ds_sim_gazebo_msgs dsros_jointstate_publisher dsros_navstate_publisher dsros_sensors dsros_ros_depth dsros_ros_ins dsros_ros_dvl dsros_ros_gps dsros_ros_reson dsros_hydro dsros_ros_thruster
   DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
