@@ -53,11 +53,10 @@ endforeach()
 
 catkin_package(
   INCLUDE_DIRS include
-  #LIBRARIES ds_sim_gazebo_msgs dsros_jointstate_publisher dsros_ros_depth dsros_ros_ins dsros_ros_dvl dsros_ros_gps
-  LIBRARIES dsros_sensors
+  # Export for downstream packages
+  LIBRARIES ds_sim_gazebo_msgs dsros_jointstate_publisher dsros_ros_depth dsros_ros_ins dsros_ros_dvl dsros_ros_gps
   CATKIN_DEPENDS xacro roscpp gazebo_ros sensor_msgs ds_core_msgs ds_sensor_msgs ds_actuator_msgs ds_multibeam_msgs
     dave_gazebo_world_plugins
-  DEPENDS
 )
 
 # Build any protobuf messages we're going to use
