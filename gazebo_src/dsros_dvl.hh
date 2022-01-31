@@ -57,7 +57,7 @@
 #include <gazebo/common/common.hh>
 
 #include <SensorDvl.pb.h>
-#include <dave_gazebo_world_plugins/StratifiedCurrentVelocity.pb.h>
+#include <StratifiedCurrentVelocity.pb.h>
 
 namespace gazebo {
 namespace sensors {
